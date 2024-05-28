@@ -1,0 +1,20 @@
+# Build stage
+FROM golang:1.22.1 AS builder
+
+ENV CGO_ENABLED=0
+ENV GIN_MODE=release
+
+WORKDIR /go/src
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN go build -o /go/bin/romeo ./cmd/romeo/main.go
+
+
+
+# Prod stage
+FROM golang:1.22.1
+COPY --from=builder /go/bin/romeo /romeo
+ENTRYPOINT [ "/romeo" ]

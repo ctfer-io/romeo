@@ -1,0 +1,19 @@
+name: 'Romeo-IaC'
+author: 'ctfer-io'
+description: 'Romeo belongs to the cloud, not a book.'
+branding:
+  icon: 'percent'
+  color: 'blue'
+
+inputs:
+  url:
+    description: 'The URL to reach the Kubernetes cluster at. Required if coverfile is set.'
+  coverfile:
+    description: 'The coverage file to export Romeo results to in (textfmt).'
+
+runs:
+  using: 'docker'
+  image: 'ctferio/romeo-iac:dev'
+  env:
+    URL: ${{ inputs.url }}
+    COVERFILE: ${{ inputs.coverfile }}
