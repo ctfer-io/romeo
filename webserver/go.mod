@@ -1,6 +1,6 @@
-module github.com/ctfer-io/romeo
+module github.com/ctfer-io/romeo/webserver
 
-go 1.22.1
+go 1.23.1
 
 require (
 	github.com/gin-contrib/zap v0.1.0
