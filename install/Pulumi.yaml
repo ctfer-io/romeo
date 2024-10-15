@@ -1,0 +1,14 @@
+name: environment
+runtime: go
+description: The Kubernetes Romeo environment.
+config:
+  namespace:
+    type: string
+    description: The namespace to deploy into. Should be ephemeral (i.e. workflow-long).
+  server:
+    type: string
+    description: The Kubernetes server URL to reach Romeo at, once the webserver is exposed.
+
+author: CTFer.io
+license: Apache-2.0
+website: https://ctfer.io/docs/romeo

@@ -1,3 +1,0 @@
-FROM pulumi/pulumi-go:3.106.0
-COPY romeo /romeo-iac
-ENTRYPOINT [ "/romeo-iac" ]
