@@ -1,0 +1,26 @@
+name: 'Romeo Environment'
+author: 'ctfer-io'
+description: 'Deploy a Romeo environment from an Action'
+branding:
+  icon: 'pie-chart'
+  color: 'blue'
+
+inputs:
+  kubeconfig:
+    description: 'The kubeconfig to use for deploying a Romeo environment'
+    required: true
+  tag:
+    description: 'The Romeo webserver docker tag to use'
+    required: true
+    default: 'latest'
+
+outputs:
+  port:
+    description: 'The port to reach out the Romeo webserver'
+  claim-name:
+    description: 'The PersistentVolumeClaim name for binaries to mount in order to write coverage data'
+
+runs:
+  using: node20
+  main: ../dist/environment.js
+  post: ../dist/environment.js

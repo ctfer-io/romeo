@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"sync"
 	"syscall"
 	"time"
 
@@ -29,6 +28,8 @@ var (
 	commit  = ""
 	date    = ""
 	builtBy = ""
+
+	logger = zap.Must(zap.NewProduction())
 )
 
 func main() {
@@ -75,7 +76,7 @@ func main() {
 	go func() {
 		select {
 		case <-sigs:
-			Log().Info("signal interruption catched")
+			logger.Info("signal interruption catched")
 			cancel()
 			os.Exit(1)
 		case <-ctx.Done():
@@ -84,7 +85,7 @@ func main() {
 	}()
 
 	if err := app.RunContext(ctx, os.Args); err != nil {
-		Log().Error("root level error", zap.Error(err))
+		logger.Error("root level error", zap.Error(err))
 	}
 }
 
@@ -93,7 +94,6 @@ func run(ctx *cli.Context) error {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	logger := Log()
 	router.Use(ginzap.Ginzap(logger, time.RFC3339, true))
 	router.Use(ginzap.RecoveryWithZap(logger, true))
 
@@ -104,20 +104,6 @@ func run(ctx *cli.Context) error {
 		zap.Int("port", port),
 	)
 	return router.Run(fmt.Sprintf(":%d", port))
-}
-
-// region log
-
-var (
-	logger  *zap.Logger
-	logOnce sync.Once
-)
-
-func Log() *zap.Logger {
-	logOnce.Do(func() {
-		logger, _ = zap.NewProduction()
-	})
-	return logger
 }
 
 // region API
@@ -135,6 +121,7 @@ func coverout(ctx *gin.Context) {
 	defer rm()
 
 	// Merge files
+	// TODO bind to Go's internals rather than executing it (smaller Docker images and avoid CLI flags injections)
 	cmd := exec.Command("go", "tool", "covdata", "merge", "-i="+coverdir, "-o="+tmpDir)
 	if err := cmd.Run(); err != nil {
 		internalErr(ctx, "merge returned non-zero status code")
@@ -182,7 +169,7 @@ func coverout(ctx *gin.Context) {
 }
 
 func internalErr(ctx *gin.Context, err string) {
-	Log().Error("internal error", zap.String("err", err))
+	logger.Error("internal error", zap.String("err", err))
 	ctx.JSON(http.StatusInternalServerError, gin.H{
 		"error": err,
 	})
@@ -196,7 +183,7 @@ func newTmpDir() (string, func()) {
 
 	// Create directory
 	if err := os.Mkdir(tmpDir, os.ModePerm); err != nil {
-		Log().Error("creating temporary directory failed",
+		logger.Error("creating temporary directory failed",
 			zap.String("directory", tmpDir),
 			zap.Error(err),
 		)
@@ -206,7 +193,7 @@ func newTmpDir() (string, func()) {
 	return tmpDir, func() {
 		// Delete directory
 		if err := os.Remove(tmpDir); err != nil {
-			Log().Error("deleting temporary directory failed",
+			logger.Error("deleting temporary directory failed",
 				zap.String("directory", tmpDir),
 				zap.Error(err),
 			)

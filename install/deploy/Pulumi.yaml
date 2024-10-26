@@ -1,0 +1,14 @@
+name: romeo-install
+runtime: go
+description: The Kubernetes IaC to install Romeo.
+config:
+  namespace:
+    type: string
+    description: 'The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification.'
+  api-server:
+    type: string
+    description: 'The Kubernetes api-server URL to pipe into the generated kubeconfig. Example: "https://cp.my-k8s.lan:6443"'
+
+author: CTFer.io
+license: Apache-2.0
+website: https://ctfer.io/docs/romeo
