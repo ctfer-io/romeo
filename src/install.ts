@@ -11,23 +11,20 @@ async function run(): Promise<void> {
             'romeo-install:api-server': { value: core.getInput('api-server') }
         })
 
-        console.info('Deploying Romeo install...')
-        const upRes = await stack.up({ onOutput: console.info })
+        const upRes = await stack.up({ onOutput: core.info })
 
         core.setOutput('kubeconfig', upRes.outputs.kubeconfig.value)
     } catch (error) {
-        core.setFailed(`Action failed: ${(error as Error)?.message ?? error}`)
+        core.setFailed(`${(error as Error)?.message ?? error}`)
     }
 }
 
 async function cleanup(): Promise<void> {
     try {
         const stack = await iac.getStack('install')
-        await stack.destroy({ onOutput: console.info, remove: true })
-
-        core.info('Romeo environment destroyed.')
+        await stack.destroy({ onOutput: core.info, remove: true })
     } catch (error) {
-        core.warning(`Cleanup failed: ${(error as Error)?.message ?? error}`)
+        core.warning(`${(error as Error)?.message ?? error}`)
     }
 }
 
