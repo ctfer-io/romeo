@@ -8,6 +8,7 @@ config:
   tag:
     type: string
     description: 'The Romeo webserver docker tag to use'
+    default: 'latest'
 
 author: CTFer.io
 license: Apache-2.0

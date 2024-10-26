@@ -29,8 +29,9 @@ const iac = __importStar(require("./iac"));
 async function run() {
     try {
         const stack = await iac.getStack('environment');
-        await stack.setConfig('romeo-environment:kubeconfig', {
-            value: core.getInput('kubeconfig')
+        await stack.setAllConfig({
+            'romeo-environment:kubeonfig': { value: core.getInput('kubeconfig') },
+            'romeo-environment:tag': { value: core.getInput('tag') },
         });
         const upRes = await stack.up({ onOutput: core.info });
         core.setOutput('port', upRes.outputs.port.value);
