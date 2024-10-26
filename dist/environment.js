@@ -30,7 +30,7 @@ async function run() {
     try {
         const stack = await iac.getStack('environment');
         await stack.setAllConfig({
-            'romeo-environment:kubeonfig': { value: core.getInput('kubeconfig') },
+            'romeo-environment:kubeconfig': { value: core.getInput('kubeconfig') },
             'romeo-environment:tag': { value: core.getInput('tag') },
         });
         const upRes = await stack.up({ onOutput: core.info });
