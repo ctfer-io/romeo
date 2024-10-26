@@ -32,6 +32,7 @@
     },
     "dependencies": {
         "@actions/core": "^1.11.1",
+        "@actions/github": "^6.0.0",
         "@pulumi/pulumi": "^3.137.0",
         "upath": "^2.0.1"
     },
