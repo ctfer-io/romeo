@@ -1,0 +1,14 @@
+name: romeo-environment
+runtime: go
+description: Deploy a Romeo environment
+config:
+  kubeconfig:
+    type: string
+    description: 'The kubeconfig to use for deploying a Romeo environment'
+  tag:
+    type: string
+    description: 'The Romeo webserver docker tag to use'
+
+author: CTFer.io
+license: Apache-2.0
+website: https://ctfer.io/docs/romeo

@@ -1,7 +1,7 @@
-go 1.23.1
+go 1.23.2
 
 use (
-	./deploy
-	./install
+	./environment/deploy
+	./install/deploy
 	./webserver
 )

@@ -1,0 +1,43 @@
+{
+    "name": "romeo",
+    "description": "O Romeo, Romeo, whatfore art coverages Romeo?",
+    "version": "0.0.1",
+    "author": "ctfer-io",
+    "private": true,
+    "homepage": "https://github.com/ctfer-io/romeo-action",
+    "license": "Apache-2.0",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ctfer-io/romeo-action.git"
+    },
+    "bugs": {
+        "url": "https://github.com/ctfer-io/romeo-action/issues"
+    },
+    "keywords": [
+        "actions",
+        "coverage",
+        "ci",
+        "golang"
+    ],
+    "engines": {
+        "node": ">=21"
+    },
+    "scripts": {
+        "build": "tsc --build",
+        "ci-test": "npx jest",
+        "format:write": "npx prettier --write .",
+        "format:check": "npx prettier --check .",
+        "lint": "npx eslint . -c ./.github/linters/.eslintrc.yml",
+        "all": "npm run format:write && npm run lint && npm run build"
+    },
+    "dependencies": {
+        "@actions/core": "^1.11.1",
+        "@pulumi/pulumi": "^3.137.0",
+        "upath": "^2.0.1"
+    },
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.11.0",
+        "@typescript-eslint/parser": "^8.11.0",
+        "eslint-plugin-jest": "^28.8.3"
+    }
+}

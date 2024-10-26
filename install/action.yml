@@ -1,0 +1,24 @@
+name: 'Romeo Install'
+author: 'ctfer-io'
+description: 'Install Romeo from an Action'
+branding:
+  icon: 'chevrons-up'
+  color: 'yellow'
+
+inputs:
+  namespace:
+    description: 'The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification.'
+    required: true
+    default: 'romeo'
+  api-server:
+    description: 'The Kubernetes api-server URL to pipe into the generated kubeconfig. Example: "https://cp.my-k8s.lan:6443"'
+    required: true
+
+outputs:
+  kubeconfig:
+    description: 'The kubeconfig to use for deploying a Romeo environment'
+
+runs:
+  using: node20
+  main: ../dist/install.js
+  post: ../dist/install.js
