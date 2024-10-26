@@ -33,22 +33,20 @@ async function run() {
             'romeo-install:namespace': { value: core.getInput('namespace') },
             'romeo-install:api-server': { value: core.getInput('api-server') }
         });
-        console.info('Deploying Romeo install...');
-        const upRes = await stack.up({ onOutput: console.info });
+        const upRes = await stack.up({ onOutput: core.info });
         core.setOutput('kubeconfig', upRes.outputs.kubeconfig.value);
     }
     catch (error) {
-        core.setFailed(`Action failed: ${error?.message ?? error}`);
+        core.setFailed(`${error?.message ?? error}`);
     }
 }
 async function cleanup() {
     try {
         const stack = await iac.getStack('install');
-        await stack.destroy({ onOutput: console.info, remove: true });
-        core.info('Romeo environment destroyed.');
+        await stack.destroy({ onOutput: core.info, remove: true });
     }
     catch (error) {
-        core.warning(`Cleanup failed: ${error?.message ?? error}`);
+        core.warning(`${error?.message ?? error}`);
     }
 }
 // Main
