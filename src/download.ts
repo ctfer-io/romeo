@@ -13,7 +13,7 @@ type Coverout = {
 async function run(): Promise<void> {
     try {
         const server = core.getInput('server')
-        const response = await fetch(server + '/coverout')
+        const response = await fetch(`${server}/coverout`)
         const data = (await response.json()) as Coverout
 
         await extract(data.merged, core.getInput('directory'))

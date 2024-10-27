@@ -32,7 +32,7 @@ void import('node-fetch');
 async function run() {
     try {
         const server = core.getInput('server');
-        const response = await fetch(server + '/coverout');
+        const response = await fetch(`${server}/coverout`);
         const data = (await response.json());
         await extract(data.merged, core.getInput('directory'));
     }
