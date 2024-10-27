@@ -5,6 +5,7 @@ go 1.23.2
 require (
 	github.com/gin-contrib/zap v1.1.4
 	github.com/gin-gonic/gin v1.10.0
+	github.com/pkg/errors v0.9.1
 	github.com/urfave/cli/v2 v2.25.7
 	go.uber.org/zap v1.27.0
 )

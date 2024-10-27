@@ -15,5 +15,10 @@ inputs:
     default: 'coverout'
 
 runs:
-  using: node20
-  main: ../dist/download.js
+  using: docker
+  image: 'docker://ctferio/romeo:dev'
+  args:
+    - download
+  env:
+    SERVER: ${{ inputs.server }}
+    DIRECTORY: ${{ inputs.directory }}

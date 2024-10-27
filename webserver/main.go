@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 	"go.uber.org/zap"
 )
@@ -40,14 +42,34 @@ func main() {
 			cli.HelpFlag,
 			cli.VersionFlag,
 			&cli.StringFlag{
-				Name:     "coverdir",
-				EnvVars:  []string{"COVERDIR"},
-				Required: true,
+				Name:    "coverdir",
+				EnvVars: []string{"COVERDIR"},
 			},
 			&cli.IntFlag{
 				Name:    "port",
 				EnvVars: []string{"PORT"},
 				Value:   8080,
+			},
+		},
+		Commands: []*cli.Command{
+			{
+				Name:  "download",
+				Usage: "Download the Romeo data from an environment, after running your tests.",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "server",
+						Usage:    "Server URL to reach out the Romeo environment.",
+						Required: true,
+						EnvVars:  []string{"SERVER"},
+					},
+					&cli.StringFlag{
+						Name:     "directory",
+						Usage:    "Directory to export the coverages data (defaults to \"coverout\").",
+						Required: true,
+						EnvVars:  []string{"DIRECTORY"},
+					},
+				},
+				Action: download,
 			},
 		},
 		Action: run,
@@ -108,6 +130,10 @@ func run(ctx *cli.Context) error {
 
 // region API
 
+type CoveroutResponse struct {
+	Merged string `json:"merged"`
+}
+
 var (
 	coverdir = ""
 )
@@ -163,8 +189,8 @@ func coverout(ctx *gin.Context) {
 	w.Close()
 
 	// Encode b64 and serve it
-	ctx.JSON(http.StatusOK, gin.H{
-		"merged": base64.StdEncoding.EncodeToString(buf.Bytes()),
+	ctx.JSON(http.StatusOK, CoveroutResponse{
+		Merged: base64.StdEncoding.EncodeToString(buf.Bytes()),
 	})
 }
 
@@ -199,4 +225,74 @@ func newTmpDir() (string, func()) {
 			)
 		}
 	}
+}
+
+// region download
+
+func download(ctx *cli.Context) error {
+	// Download coverages
+	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverout", ctx.String("server")), nil)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	// Unmarshal them
+	resp := &CoveroutResponse{}
+	if err := json.NewDecoder(res.Body).Decode(resp); err != nil {
+		return err
+	}
+
+	// Decode base64
+	b, err := base64.StdEncoding.DecodeString(resp.Merged)
+	if err != nil {
+		return errors.Wrap(err, "base64 decoding")
+	}
+
+	// Unzip content into it
+	r, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	if err != nil {
+		return errors.Wrap(err, "base64 decoded invalid zip archive")
+	}
+	cd := ctx.String("directory")
+	for _, f := range r.File {
+		filePath := filepath.Join(cd, f.Name)
+		if f.FileInfo().IsDir() {
+			continue
+		}
+
+		// If the file is in a sub-directory, create it
+		dir := filepath.Dir(filePath)
+		if _, err := os.Stat(dir); err != nil {
+			if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+				return err
+			}
+		}
+
+		// Create and write the file
+		if err := copyTo(filePath, f); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyTo(filePath string, f *zip.File) error {
+	outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0777)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	rc, err := f.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+
+	if _, err := io.Copy(outFile, rc); err != nil {
+		return err
+	}
+	return nil
 }
