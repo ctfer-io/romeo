@@ -238,20 +238,25 @@ func download(ctx *cli.Context) error {
 	}
 	defer res.Body.Close()
 
-	// Unmarshal them
-	resp := &CoveroutResponse{}
-	if err := json.NewDecoder(res.Body).Decode(resp); err != nil {
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
 		return err
 	}
 
+	// Unmarshal them
+	resp := &CoveroutResponse{}
+	if err := json.Unmarshal(b, resp); err != nil {
+		return errors.Wrapf(err, "unmarshalling error of body %s", b)
+	}
+
 	// Decode base64
-	b, err := base64.StdEncoding.DecodeString(resp.Merged)
+	raw, err := base64.StdEncoding.DecodeString(resp.Merged)
 	if err != nil {
 		return errors.Wrap(err, "base64 decoding")
 	}
 
 	// Unzip content into it
-	r, err := zip.NewReader(bytes.NewReader(b), int64(len(b)))
+	r, err := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
 	if err != nil {
 		return errors.Wrap(err, "base64 decoded invalid zip archive")
 	}
