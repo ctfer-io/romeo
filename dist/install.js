@@ -30,8 +30,12 @@ async function run() {
     try {
         const stack = await iac.getStack('install');
         await stack.setAllConfig({
-            'romeo-install:namespace': { value: core.getInput('namespace') },
-            'romeo-install:api-server': { value: core.getInput('api-server') }
+            'romeo-install:namespace': {
+                value: core.getInput('namespace')
+            },
+            'romeo-install:api-server': {
+                value: core.getInput('api-server')
+            }
         });
         const upRes = await stack.up({ onOutput: core.info });
         core.setOutput('kubeconfig', upRes.outputs.kubeconfig.value);
