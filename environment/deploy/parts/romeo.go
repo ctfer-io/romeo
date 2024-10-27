@@ -1,6 +1,7 @@
 package parts
 
 import (
+	"fmt"
 	"strconv"
 
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
@@ -11,15 +12,16 @@ import (
 )
 
 type (
-	// Romeo contains the ephemeral Kubernetes infrastructure for the Go
+	// RomeoEnvironment contains the ephemeral Kubernetes infrastructure for the Go
 	// binaries to export their coverage info into.
-	Romeo struct {
+	RomeoEnvironment struct {
 		pulumi.ResourceState
 
-		randName *random.RandomString
-		pvc      *corev1.PersistentVolumeClaim
-		dep      *appsv1.Deployment
-		svc      *corev1.Service
+		randName  *random.RandomString
+		pvc       *corev1.PersistentVolumeClaim
+		dep       *appsv1.Deployment
+		svc       *corev1.Service
+		coverRand *random.RandomString
 
 		// The port to reach the Romeo instance on.
 		Port pulumi.StringOutput
@@ -29,10 +31,12 @@ type (
 		ClaimName pulumi.StringOutput
 	}
 
-	// RomeoArgs contains all the arguments to deploy a Romeo instance.
-	RomeoArgs struct {
+	// RomeoEnvironmentArgs contains all the arguments to deploy a Romeo environment.
+	RomeoEnvironmentArgs struct {
 		Tag pulumi.StringInput
 		tag pulumi.StringOutput
+
+		ClaimName pulumi.StringPtrInput
 	}
 )
 
@@ -40,20 +44,20 @@ const (
 	coverdir = "/tmp/coverdir"
 )
 
-// NewRomeo deploys a Romeo instance on Kubernetes.
+// NewRomeoEnvironment deploys a Romeo instance on Kubernetes.
 // The Romeo variable could be reused as a Pulumi ressource i.e. could
 // be a dependency, consumes inputs and produces outputs, etc.
-func NewRomeo(ctx *pulumi.Context, name string, args *RomeoArgs, opts ...pulumi.ResourceOption) (*Romeo, error) {
+func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (*RomeoEnvironment, error) {
 	if args == nil {
-		args = &RomeoArgs{}
+		args = &RomeoEnvironmentArgs{}
 	}
 	if args.Tag == nil || args.Tag == pulumi.String("") {
 		args.Tag = pulumi.String("dev").ToStringOutput()
 	}
 	args.tag = args.Tag.ToStringPtrOutput().Elem()
 
-	romeo := &Romeo{}
-	if err := ctx.RegisterComponentResource("ctfer-io:romeo:romeo", name, romeo, opts...); err != nil {
+	romeo := &RomeoEnvironment{}
+	if err := ctx.RegisterComponentResource("ctfer-io:romeo:environment", name, romeo, opts...); err != nil {
 		return nil, err
 	}
 	opts = append(opts, pulumi.Parent(romeo))
@@ -65,7 +69,7 @@ func NewRomeo(ctx *pulumi.Context, name string, args *RomeoArgs, opts ...pulumi.
 	return romeo, nil
 }
 
-func (romeo *Romeo) provision(ctx *pulumi.Context, args *RomeoArgs, opts ...pulumi.ResourceOption) (err error) {
+func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (err error) {
 	// Generate unique (random enough) PVC name
 	romeo.randName, err = random.NewRandomString(ctx, "romeo-name", &random.RandomStringArgs{
 		Length:  pulumi.Int(8),
@@ -104,6 +108,58 @@ func (romeo *Romeo) provision(ctx *pulumi.Context, args *RomeoArgs, opts ...pulu
 	}
 
 	// => Deployment
+	envs := corev1.EnvVarArray{
+		corev1.EnvVarArgs{
+			Name:  pulumi.String("COVERDIR"),
+			Value: pulumi.String(coverdir),
+		},
+	}
+	volumeMounts := corev1.VolumeMountArray{
+		corev1.VolumeMountArgs{
+			Name:      pulumi.String("coverdir"),
+			MountPath: pulumi.String(coverdir),
+		},
+	}
+	volumes := corev1.VolumeArray{
+		corev1.VolumeArgs{
+			Name: pulumi.String("coverdir"),
+			PersistentVolumeClaim: corev1.PersistentVolumeClaimVolumeSourceArgs{
+				ClaimName: romeo.pvc.Metadata.Name().Elem(),
+			},
+		},
+	}
+	if args.ClaimName != nil {
+		// If coverage is turned on, export coverages in a random directory
+		// that is different from coverdir (ensure no collision).
+		romeo.coverRand, err = random.NewRandomString(ctx, "cover-rand", &random.RandomStringArgs{
+			Length:  pulumi.Int(16),
+			Lower:   pulumi.BoolPtr(true),
+			Numeric: pulumi.BoolPtr(false),
+			Special: pulumi.BoolPtr(false),
+			Upper:   pulumi.BoolPtr(false),
+		}, opts...)
+		if err != nil {
+			return
+		}
+		path := romeo.coverRand.Result.ApplyT(func(rand string) string {
+			return fmt.Sprintf("/tmp/%s", rand)
+		}).(pulumi.StringOutput)
+
+		envs = append(envs, corev1.EnvVarArgs{
+			Name:  pulumi.String("GOCOVERDIR"),
+			Value: path,
+		})
+		volumeMounts = append(volumeMounts, corev1.VolumeMountArgs{
+			Name:      pulumi.String("coverages"),
+			MountPath: path,
+		})
+		volumes = append(volumes, corev1.VolumeArgs{
+			Name: pulumi.String("coverages"),
+			PersistentVolumeClaim: corev1.PersistentVolumeClaimVolumeSourceArgs{
+				ClaimName: args.ClaimName.ToStringPtrOutput().Elem(),
+			},
+		})
+	}
 	romeo.dep, err = appsv1.NewDeployment(ctx, "romeo-dep", &appsv1.DeploymentArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Labels: pulumi.StringMap{
@@ -144,28 +200,11 @@ func (romeo *Romeo) provision(ctx *pulumi.Context, args *RomeoArgs, opts ...pulu
 									Name:          pulumi.String("api"),
 								},
 							},
-							Env: corev1.EnvVarArray{
-								corev1.EnvVarArgs{
-									Name:  pulumi.String("COVERDIR"),
-									Value: pulumi.String(coverdir),
-								},
-							},
-							VolumeMounts: corev1.VolumeMountArray{
-								corev1.VolumeMountArgs{
-									Name:      pulumi.String("coverdir"),
-									MountPath: pulumi.String(coverdir),
-								},
-							},
+							Env:          envs,
+							VolumeMounts: volumeMounts,
 						},
 					},
-					Volumes: corev1.VolumeArray{
-						corev1.VolumeArgs{
-							Name: pulumi.String("coverdir"),
-							PersistentVolumeClaim: corev1.PersistentVolumeClaimVolumeSourceArgs{
-								ClaimName: romeo.pvc.Metadata.Name().Elem(),
-							},
-						},
-					},
+					Volumes: volumes,
 				},
 			},
 		},
@@ -206,7 +245,7 @@ func (romeo *Romeo) provision(ctx *pulumi.Context, args *RomeoArgs, opts ...pulu
 	return
 }
 
-func (romeo *Romeo) outputs() {
+func (romeo *RomeoEnvironment) outputs() {
 	romeo.ClaimName = romeo.randName.Result
 	romeo.Port = romeo.svc.Spec.ApplyT(func(spec corev1.ServiceSpec) string {
 		if len(spec.Ports) == 0 || spec.Ports[0].NodePort == nil {

@@ -26,8 +26,9 @@ func main() {
 		}
 
 		// Deploy a Romeo instance
-		romeo, err := parts.NewRomeo(ctx, "deploy", &parts.RomeoArgs{
-			Tag: pulumi.String(cfg.Get("tag")),
+		romeo, err := parts.NewRomeoEnvironment(ctx, "deploy", &parts.RomeoEnvironmentArgs{
+			Tag:       pulumi.String(cfg.Get("tag")),
+			ClaimName: pulumi.StringPtrFromPtr(strPtr(cfg, "claim-name")),
 		}, opts...)
 		if err != nil {
 			return err
@@ -35,8 +36,16 @@ func main() {
 
 		// Export Romeo outputs
 		ctx.Export("port", romeo.Port)
-		ctx.Export("claimName", romeo.ClaimName)
+		ctx.Export("claim-name", romeo.ClaimName)
 
 		return nil
 	})
+}
+
+func strPtr(cfg *config.Config, key string) *string {
+	v := cfg.Get(key)
+	if v == "" {
+		return nil
+	}
+	return &v
 }

@@ -9,6 +9,9 @@ config:
     type: string
     description: 'The Romeo webserver docker tag to use'
     default: 'latest'
+  claim-name:
+    type: string
+    description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
 
 author: CTFer.io
 license: Apache-2.0

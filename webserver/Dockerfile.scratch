@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /go/bin/romeo main.go
+RUN go build -cover -o /go/bin/romeo main.go
 
 
 

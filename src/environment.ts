@@ -12,13 +12,16 @@ async function run(): Promise<void> {
             },
             'romeo-environment:tag': {
                 value: core.getInput('tag')
+            },
+            'romeo-environment:claim-name': {
+                value: core.getInput('claim-name')
             }
         })
 
         const upRes = await stack.up({ onOutput: core.info })
 
-        core.setOutput('port', upRes.outputs.port.value)
-        core.setOutput('claim-name', upRes.outputs.claimName.value)
+        core.setOutput('port', upRes.outputs['port'].value)
+        core.setOutput('claim-name', upRes.outputs['claim-name'].value)
     } catch (error) {
         core.setFailed(`${(error as Error)?.message ?? error}`)
     }

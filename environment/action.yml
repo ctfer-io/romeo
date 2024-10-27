@@ -13,6 +13,9 @@ inputs:
     description: 'The Romeo webserver docker tag to use'
     required: true
     default: 'latest'
+  claim-name:
+    description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
+    required: false
 
 outputs:
   port:
