@@ -43,7 +43,6 @@ async function run() {
 async function extract(merged, outputDir) {
     // 1. Decode base64
     const decoded = buffer_1.Buffer.from(merged, 'base64');
-    core.info(decoded.toString('utf8'));
     // 2. Unzip content
     yauzl.fromBuffer(decoded, { lazyEntries: true }, (err, zipFile) => {
         if (err)

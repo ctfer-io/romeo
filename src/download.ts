@@ -25,7 +25,6 @@ async function run(): Promise<void> {
 async function extract(merged: string, outputDir: string): Promise<void> {
     // 1. Decode base64
     const decoded = Buffer.from(merged, 'base64')
-    core.info(decoded.toString('utf8'))
 
     // 2. Unzip content
     yauzl.fromBuffer(decoded, { lazyEntries: true }, (err, zipFile) => {
