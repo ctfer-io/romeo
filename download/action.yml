@@ -1,0 +1,19 @@
+name: 'Romeo Download'
+author: 'ctfer-io'
+description: 'Download the Romeo data from an environment, after running your tests'
+branding:
+  icon: 'bar-chart-2'
+  color: 'green'
+
+inputs:
+  server:
+    description: 'Server URL to reach out the Romeo environment'
+    required: true
+  directory:
+    description: 'Directory to export the coverages data (defaults to "coverout")'
+    required: true
+    default: 'coverout'
+
+runs:
+  using: node20
+  main: ../dist/download.js
