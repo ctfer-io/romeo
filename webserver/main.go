@@ -15,6 +15,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -171,7 +172,9 @@ func coverout(ctx *gin.Context) {
 		}
 		defer file.Close()
 
-		f, err := w.Create(path)
+		// Remove coverdir from file in zip (avoid nested directories)
+		npath := strings.TrimPrefix(path, tmpDir+"/")
+		f, err := w.Create(npath)
 		if err != nil {
 			return err
 		}
@@ -231,6 +234,7 @@ func newTmpDir() (string, func()) {
 
 func download(ctx *cli.Context) error {
 	// Download coverages
+	fmt.Println("Downloading coverages...")
 	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverout", ctx.String("server")), nil)
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -261,6 +265,7 @@ func download(ctx *cli.Context) error {
 		return errors.Wrap(err, "base64 decoded invalid zip archive")
 	}
 	cd := ctx.String("directory")
+	fmt.Printf("Exporting coverages to %s\n", cd)
 	for _, f := range r.File {
 		filePath := filepath.Join(cd, f.Name)
 		if f.FileInfo().IsDir() {
@@ -280,7 +285,9 @@ func download(ctx *cli.Context) error {
 			return err
 		}
 	}
-	return nil
+
+	// Write coverdir as an output
+	return outputDirectory(cd)
 }
 
 func copyTo(filePath string, f *zip.File) error {
@@ -300,4 +307,15 @@ func copyTo(filePath string, f *zip.File) error {
 		return err
 	}
 	return nil
+}
+
+func outputDirectory(dir string) error {
+	f, err := os.Open(os.Getenv("GITHUB_OUTPUT"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = fmt.Fprintf(f, "directory=%s\n", dir)
+	return err
 }

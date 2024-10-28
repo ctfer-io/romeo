@@ -14,6 +14,10 @@ inputs:
     required: true
     default: 'coverout'
 
+outputs:
+  directory:
+    description: 'Directory the coverages data were exported to'
+
 runs:
   using: docker
   image: 'docker://ctferio/romeo:dev'
