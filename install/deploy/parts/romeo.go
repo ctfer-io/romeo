@@ -175,11 +175,14 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 }
 
 func (renv *RomeoInstall) outputs(args *RomeoInstallArgs) {
-	renv.Kubeconfig = renv.sec.Data.ApplyT(func(data map[string]string) string {
+	renv.Kubeconfig = pulumi.All(renv.sec.Data, args.Namespace).ApplyT(func(all []any) string {
+		data := all[0].(map[string]string)
+		ns := all[1].(string)
+
 		values := &KubeconfigTemplateValues{
 			CaCrt:     data["ca.crt"],
 			ApiServer: args.ApiServer,
-			Namespace: data["namespace"],
+			Namespace: ns,
 			Token:     data["token"],
 		}
 		buf := &bytes.Buffer{}
