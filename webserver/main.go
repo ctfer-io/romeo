@@ -109,6 +109,7 @@ func main() {
 
 	if err := app.RunContext(ctx, os.Args); err != nil {
 		logger.Error("root level error", zap.Error(err))
+		os.Exit(1)
 	}
 }
 
@@ -310,12 +311,12 @@ func copyTo(filePath string, f *zip.File) error {
 }
 
 func outputDirectory(dir string) error {
-	f, err := os.Open(os.Getenv("GITHUB_OUTPUT"))
+	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "opening output file")
 	}
 	defer f.Close()
 
 	_, err = fmt.Fprintf(f, "directory=%s\n", dir)
-	return err
+	return errors.Wrap(err, "writing directory output")
 }
