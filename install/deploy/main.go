@@ -27,8 +27,8 @@ func main() {
 
 		// Install Romeo
 		renv, err := parts.NewRomeoInstall(ctx, "install", &parts.RomeoInstallArgs{
-			Namespace: pulumi.String(cfg.Require("namespace")),
-			ApiServer: cfg.Require("api-server"),
+			Namespace: pulumi.String(cfg.Get("namespace")),
+			ApiServer: pulumi.String(cfg.Get("api-server")),
 		}, opts...)
 		if err != nil {
 			return err

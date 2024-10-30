@@ -11,7 +11,6 @@ inputs:
     required: true
   namespace:
     description: 'The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification.'
-    required: true
     default: 'romeo'
   api-server:
     description: 'The Kubernetes api-server URL to pipe into the generated kubeconfig. Example: "https://cp.my-k8s.lan:6443"'

@@ -7,7 +7,7 @@ config:
     description: 'The kubeconfig to use for installing Romeo and generating its own kubeconfig'
   namespace:
     type: string
-    description: 'The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification.'
+    description: 'The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification. If not specified, will create one one the fly'
   api-server:
     type: string
     description: 'The Kubernetes api-server URL to pipe into the generated kubeconfig. Example: "https://cp.my-k8s.lan:6443"'
