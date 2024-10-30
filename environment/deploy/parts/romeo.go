@@ -23,6 +23,12 @@ type (
 		svc       *corev1.Service
 		coverRand *random.RandomString
 
+		// Namespace to where Romeo is deployed.
+		// You can reuse it for further tests such that deployed Go apps target
+		// this namespace for their own deployment, thus can reach the
+		// PersistentVolumeClaim.
+		Namespace pulumi.StringOutput
+
 		// The port to reach the Romeo instance on.
 		Port pulumi.StringOutput
 
@@ -246,6 +252,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 }
 
 func (romeo *RomeoEnvironment) outputs() {
+	romeo.Namespace = romeo.dep.Metadata.Namespace().Elem()
 	romeo.ClaimName = romeo.randName.Result
 	romeo.Port = romeo.svc.Spec.ApplyT(func(spec corev1.ServiceSpec) string {
 		if len(spec.Ports) == 0 || spec.Ports[0].NodePort == nil {

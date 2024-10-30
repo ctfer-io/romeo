@@ -35,6 +35,7 @@ func main() {
 		}
 
 		// Export Romeo outputs
+		ctx.Export("namespace", romeo.Namespace)
 		ctx.Export("port", romeo.Port)
 		ctx.Export("claim-name", romeo.ClaimName)
 

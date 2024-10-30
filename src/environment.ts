@@ -22,6 +22,7 @@ async function run(): Promise<void> {
 
         core.setOutput('port', upRes.outputs['port'].value)
         core.setOutput('claim-name', upRes.outputs['claim-name'].value)
+        core.setOutput('namespace', upRes.outputs['namespace'].value)
     } catch (error) {
         core.setFailed(`${(error as Error)?.message ?? error}`)
     }
