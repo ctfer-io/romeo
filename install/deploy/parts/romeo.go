@@ -3,6 +3,7 @@ package parts
 import (
 	"bytes"
 	_ "embed"
+	"encoding/base64"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -179,11 +180,13 @@ func (renv *RomeoInstall) outputs(args *RomeoInstallArgs) {
 		data := all[0].(map[string]string)
 		ns := all[1].(string)
 
+		token, _ := base64.StdEncoding.DecodeString(data["token"])
+
 		values := &KubeconfigTemplateValues{
 			CaCrt:     data["ca.crt"],
 			ApiServer: args.ApiServer,
 			Namespace: ns,
-			Token:     data["token"],
+			Token:     string(token),
 		}
 		buf := &bytes.Buffer{}
 		if err := kubeTemplate.Execute(buf, values); err != nil {
