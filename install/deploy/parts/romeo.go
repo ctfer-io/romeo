@@ -93,6 +93,7 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 				}),
 				Resources: pulumi.ToStringArray([]string{
 					"persistentvolumeclaims",
+					"services",
 				}),
 			},
 			rbacv1.PolicyRuleArgs{
@@ -107,7 +108,6 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 				}),
 				Resources: pulumi.ToStringArray([]string{
 					"deployments",
-					"services",
 				}),
 			},
 		},
