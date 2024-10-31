@@ -77,7 +77,7 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 	// Deploy Kubernetes resources
 
 	// => Namespace (deploy one if none specified)
-	if args.Namespace == nil {
+	if args.Namespace == nil || args.Namespace == pulumi.String("") {
 		renv.ns, err = corev1.NewNamespace(ctx, "romeo-ns", &corev1.NamespaceArgs{
 			Metadata: metav1.ObjectMetaArgs{
 				Labels: pulumi.StringMap{
@@ -104,6 +104,7 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
 			},
 		},
+		// TODO  +  kubernetes:core/v1:PersistentVolumeClaim romeo-pvc creating (0s) warning: getting storagclass "longhorn": storageclasses.storage.k8s.io "longhorn" is forbidden: User "system:serviceaccount:romeo:romeo-sa-fa059d0f" cannot get resource "storageclasses" in API group "storage.k8s.io" at the cluster scope
 		Rules: rbacv1.PolicyRuleArray{
 			rbacv1.PolicyRuleArgs{
 				ApiGroups: pulumi.ToStringArray([]string{
@@ -217,6 +218,7 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 }
 
 func (renv *RomeoInstall) outputs(args *RomeoInstallArgs) {
+	renv.Namespace = args.namespace
 	renv.Kubeconfig = pulumi.All(renv.sec.Data, args.ApiServer, args.namespace).ApplyT(func(all []any) string {
 		data := all[0].(map[string]string)
 		apiServer := all[1].(string)
