@@ -24,7 +24,7 @@ func main() {
 		}
 
 		// Install Romeo
-		renv, err := parts.NewRomeoInstall(ctx, "install", &parts.RomeoInstallArgs{
+		rist, err := parts.NewRomeoInstall(ctx, "install", &parts.RomeoInstallArgs{
 			Namespace: pulumi.String(cfg.Get("namespace")),
 			ApiServer: pulumi.String(cfg.Get("api-server")),
 		}, opts...)
@@ -33,8 +33,8 @@ func main() {
 		}
 
 		// Export romeo outputs
-		ctx.Export("kubeconfig", renv.Kubeconfig)
-		ctx.Export("namespace", renv.Namespace)
+		ctx.Export("kubeconfig", rist.Kubeconfig)
+		ctx.Export("namespace", rist.Namespace)
 
 		return nil
 	})
