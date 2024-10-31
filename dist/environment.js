@@ -26,9 +26,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const stateHelper = __importStar(require("./state-helper"));
 const iac = __importStar(require("./iac"));
+const stackName = 'environment';
 async function run() {
     try {
-        const stack = await iac.getStack('environment');
+        const stack = await iac.getStack(stackName);
         await stack.setAllConfig({
             'romeo-environment:kubeconfig': {
                 value: core.getInput('kubeconfig')
@@ -51,7 +52,7 @@ async function run() {
 }
 async function cleanup() {
     try {
-        const stack = await iac.getStack('environment');
+        const stack = await iac.getStack(stackName);
         await stack.destroy({ onOutput: core.info, remove: true });
     }
     catch (error) {

@@ -18,6 +18,8 @@ inputs:
 outputs:
   kubeconfig:
     description: 'The kubeconfig to use for deploying a Romeo environment'
+  namespace:
+    description: 'The namespace in which the install has took place. Pass it to Romeo''s environment step and tests/IVV ones to know where to deploy too'
 
 runs:
   using: node20

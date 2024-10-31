@@ -14,8 +14,6 @@ func main() {
 		// Build Kubernetes provider
 		pv, err := kubernetes.NewProvider(ctx, "provider", &kubernetes.ProviderArgs{
 			Kubeconfig: pulumi.String(cfg.Require("kubeconfig")),
-			// No need to configure the namespace, will be enforced by the kubeconfig.
-			// If not, will fall into "default".
 		})
 		if err != nil {
 			return err
@@ -36,6 +34,7 @@ func main() {
 
 		// Export romeo outputs
 		ctx.Export("kubeconfig", renv.Kubeconfig)
+		ctx.Export("namespace", renv.Namespace)
 
 		return nil
 	})

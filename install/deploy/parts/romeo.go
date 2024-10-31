@@ -30,6 +30,11 @@ type (
 		// Kubeconfig to store in the workflow secrets. Pass this to the Romeo
 		// steps for deploying ephemeral environments.
 		Kubeconfig pulumi.StringOutput
+
+		// Namespace in which the resources have been created.
+		// By nature, should be considered ephemeral thus should not contain
+		// any production charge (only for tests/IVV purposes).
+		Namespace pulumi.StringOutput
 	}
 
 	// RomeoInstallArgs contains all the arguments to setup Romeo environments.

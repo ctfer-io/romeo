@@ -2,9 +2,11 @@ import * as core from '@actions/core'
 import * as stateHelper from './state-helper'
 import * as iac from './iac'
 
+const stackName = 'environment'
+
 async function run(): Promise<void> {
     try {
-        const stack = await iac.getStack('environment')
+        const stack = await iac.getStack(stackName)
 
         await stack.setAllConfig({
             'romeo-environment:kubeconfig': {
@@ -30,7 +32,7 @@ async function run(): Promise<void> {
 
 async function cleanup(): Promise<void> {
     try {
-        const stack = await iac.getStack('environment')
+        const stack = await iac.getStack(stackName)
         await stack.destroy({ onOutput: core.info, remove: true })
     } catch (error) {
         core.warning(`${(error as Error)?.message ?? error}`)

@@ -26,9 +26,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const stateHelper = __importStar(require("./state-helper"));
 const iac = __importStar(require("./iac"));
+const stackName = 'install';
 async function run() {
     try {
-        const stack = await iac.getStack('install');
+        const stack = await iac.getStack(stackName);
         await stack.setAllConfig({
             'romeo-install:kubeconfig': {
                 value: core.getInput('kubeconfig')
@@ -41,7 +42,8 @@ async function run() {
             }
         });
         const upRes = await stack.up({ onOutput: core.info });
-        core.setOutput('kubeconfig', upRes.outputs.kubeconfig.value);
+        core.setOutput('kubeconfig', upRes.outputs['kubeconfig'].value);
+        core.setOutput('namespace', upRes.outputs['namespace'].value);
     }
     catch (error) {
         core.setFailed(`${error?.message ?? error}`);
@@ -49,7 +51,7 @@ async function run() {
 }
 async function cleanup() {
     try {
-        const stack = await iac.getStack('install');
+        const stack = await iac.getStack(stackName);
         await stack.destroy({ onOutput: core.info, remove: true });
     }
     catch (error) {
