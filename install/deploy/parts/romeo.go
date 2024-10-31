@@ -60,25 +60,25 @@ func NewRomeoInstall(ctx *pulumi.Context, name string, args *RomeoInstallArgs, o
 		return nil, errors.New("api-server is required")
 	}
 
-	renv := &RomeoInstall{}
-	if err := ctx.RegisterComponentResource("ctfer-io:romeo:install", name, renv, opts...); err != nil {
+	rist := &RomeoInstall{}
+	if err := ctx.RegisterComponentResource("ctfer-io:romeo:install", name, rist, opts...); err != nil {
 		return nil, err
 	}
-	opts = append(opts, pulumi.Parent(renv))
-	if err := renv.provision(ctx, args, opts...); err != nil {
+	opts = append(opts, pulumi.Parent(rist))
+	if err := rist.provision(ctx, args, opts...); err != nil {
 		return nil, errors.Wrap(err, "provisioning Romeo install")
 	}
-	renv.outputs(args)
+	rist.outputs(args)
 
-	return renv, nil
+	return rist, nil
 }
 
-func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs, opts ...pulumi.ResourceOption) (err error) {
+func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs, opts ...pulumi.ResourceOption) (err error) {
 	// Deploy Kubernetes resources
 
 	// => Namespace (deploy one if none specified)
 	if args.Namespace == nil || args.Namespace == pulumi.String("") {
-		renv.ns, err = corev1.NewNamespace(ctx, "romeo-ns", &corev1.NamespaceArgs{
+		rist.ns, err = corev1.NewNamespace(ctx, "romeo-ns", &corev1.NamespaceArgs{
 			Metadata: metav1.ObjectMetaArgs{
 				Labels: pulumi.StringMap{
 					"app.kubernetes.io/component": pulumi.String("install"),
@@ -90,13 +90,13 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 			return
 		}
 
-		args.namespace = renv.ns.Metadata.Namespace().Elem()
+		args.namespace = rist.ns.Metadata.Namespace().Elem()
 	} else {
 		args.namespace = args.Namespace.ToStringPtrOutput().Elem()
 	}
 
 	// => Role
-	renv.role, err = rbacv1.NewRole(ctx, "romeo-role", &rbacv1.RoleArgs{
+	rist.role, err = rbacv1.NewRole(ctx, "romeo-role", &rbacv1.RoleArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: args.namespace,
 			Labels: pulumi.StringMap{
@@ -161,7 +161,7 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 	}
 
 	// => ServiceAccount
-	renv.sa, err = corev1.NewServiceAccount(ctx, "romeo-sa", &corev1.ServiceAccountArgs{
+	rist.sa, err = corev1.NewServiceAccount(ctx, "romeo-sa", &corev1.ServiceAccountArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: args.namespace,
 			Labels: pulumi.StringMap{
@@ -175,7 +175,7 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 	}
 
 	// => RoleBinding
-	renv.rb, err = rbacv1.NewRoleBinding(ctx, "romeo-role-binding", &rbacv1.RoleBindingArgs{
+	rist.rb, err = rbacv1.NewRoleBinding(ctx, "romeo-role-binding", &rbacv1.RoleBindingArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: args.namespace,
 			Labels: pulumi.StringMap{
@@ -186,12 +186,12 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 		RoleRef: rbacv1.RoleRefArgs{
 			ApiGroup: pulumi.String("rbac.authorization.k8s.io"),
 			Kind:     pulumi.String("Role"),
-			Name:     renv.role.Metadata.Name().Elem(),
+			Name:     rist.role.Metadata.Name().Elem(),
 		},
 		Subjects: rbacv1.SubjectArray{
 			rbacv1.SubjectArgs{
 				Kind:      pulumi.String("ServiceAccount"),
-				Name:      renv.sa.Metadata.Name().Elem(),
+				Name:      rist.sa.Metadata.Name().Elem(),
 				Namespace: args.namespace,
 			},
 		},
@@ -201,11 +201,11 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 	}
 
 	// => Secret
-	renv.sec, err = corev1.NewSecret(ctx, "sa-secret", &corev1.SecretArgs{
+	rist.sec, err = corev1.NewSecret(ctx, "sa-secret", &corev1.SecretArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: args.namespace,
 			Annotations: pulumi.StringMap{
-				"kubernetes.io/service-account.name": renv.sa.Metadata.Name().Elem(),
+				"kubernetes.io/service-account.name": rist.sa.Metadata.Name().Elem(),
 			},
 		},
 		Type: pulumi.String("kubernetes.io/service-account-token"),
@@ -217,9 +217,9 @@ func (renv *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 	return
 }
 
-func (renv *RomeoInstall) outputs(args *RomeoInstallArgs) {
-	renv.Namespace = args.namespace
-	renv.Kubeconfig = pulumi.All(renv.sec.Data, args.ApiServer, args.namespace).ApplyT(func(all []any) string {
+func (rist *RomeoInstall) outputs(args *RomeoInstallArgs) {
+	rist.Namespace = rist.ns.Metadata.Namespace().Elem()
+	rist.Kubeconfig = pulumi.All(rist.sec.Data, args.ApiServer, args.namespace).ApplyT(func(all []any) string {
 		data := all[0].(map[string]string)
 		apiServer := all[1].(string)
 		ns := all[2].(string)
