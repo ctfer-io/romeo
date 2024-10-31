@@ -34,6 +34,9 @@ async function run() {
             'romeo-environment:kubeconfig': {
                 value: core.getInput('kubeconfig')
             },
+            'romeo-environment:namespace': {
+                value: core.getInput('namespace')
+            },
             'romeo-environment:tag': {
                 value: core.getInput('tag')
             },

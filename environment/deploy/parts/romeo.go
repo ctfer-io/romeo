@@ -43,6 +43,8 @@ type (
 		tag pulumi.StringOutput
 
 		ClaimName pulumi.StringPtrInput
+
+		Namespace pulumi.StringInput
 	}
 )
 
@@ -91,6 +93,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 	// => PVC
 	romeo.pvc, err = corev1.NewPersistentVolumeClaim(ctx, "romeo-pvc", &corev1.PersistentVolumeClaimArgs{
 		Metadata: metav1.ObjectMetaArgs{
+			Namespace: args.Namespace,
 			Labels: pulumi.StringMap{
 				"app.kubernetes.io/component": pulumi.String("romeo"),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
@@ -168,6 +171,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 	}
 	romeo.dep, err = appsv1.NewDeployment(ctx, "romeo-dep", &appsv1.DeploymentArgs{
 		Metadata: metav1.ObjectMetaArgs{
+			Namespace: args.Namespace,
 			Labels: pulumi.StringMap{
 				"app.kubernetes.io/name":      pulumi.String("romeo"),
 				"app.kubernetes.io/version":   args.tag,
@@ -187,6 +191,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 			Replicas: pulumi.Int(1),
 			Template: corev1.PodTemplateSpecArgs{
 				Metadata: metav1.ObjectMetaArgs{
+					Namespace: args.Namespace,
 					Labels: pulumi.StringMap{
 						"app.kubernetes.io/name":      pulumi.String("romeo"),
 						"app.kubernetes.io/version":   args.tag,
@@ -222,6 +227,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 	// => Service (expose Romeo)
 	romeo.svc, err = corev1.NewService(ctx, "romeo-svc", &corev1.ServiceArgs{
 		Metadata: metav1.ObjectMetaArgs{
+			Namespace: args.Namespace,
 			Labels: pulumi.StringMap{
 				"app.kubernetes.io/component": pulumi.String("romeo"),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),

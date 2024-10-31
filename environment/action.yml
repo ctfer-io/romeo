@@ -9,6 +9,9 @@ inputs:
   kubeconfig:
     description: 'The kubeconfig to use for deploying a Romeo environment'
     required: true
+  namespace:
+    description: 'The namespace in which to deploy, in case the kubeconfig has access to many'
+    required: false
   tag:
     description: 'The Romeo webserver docker tag to use'
     required: true

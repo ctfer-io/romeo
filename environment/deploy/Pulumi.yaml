@@ -5,6 +5,9 @@ config:
   kubeconfig:
     type: string
     description: 'The kubeconfig to use for deploying a Romeo environment'
+  namespace:
+    type: string
+    description: 'The namespace in which to deploy, in case the kubeconfig has access to many'
   tag:
     type: string
     description: 'The Romeo webserver docker tag to use'
