@@ -44,6 +44,9 @@ type (
 
 		ClaimName pulumi.StringPtrInput
 
+		StorageClassName pulumi.StringPtrInput
+		storageClassName pulumi.StringInput
+
 		Namespace pulumi.StringInput
 	}
 )
@@ -63,6 +66,10 @@ func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmen
 		args.Tag = pulumi.String("dev").ToStringOutput()
 	}
 	args.tag = args.Tag.ToStringPtrOutput().Elem()
+	if args.StorageClassName == nil || args.StorageClassName == pulumi.String("") {
+		args.StorageClassName = pulumi.StringPtr("longhorn")
+	}
+	args.storageClassName = args.storageClassName.ToStringOutput()
 
 	romeo := &RomeoEnvironment{}
 	if err := ctx.RegisterComponentResource("ctfer-io:romeo:environment", name, romeo, opts...); err != nil {
@@ -101,7 +108,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 			Name: romeo.randName.Result,
 		},
 		Spec: corev1.PersistentVolumeClaimSpecArgs{
-			StorageClassName: pulumi.String("longhorn"),
+			StorageClassName: args.storageClassName,
 			AccessModes: pulumi.ToStringArray([]string{
 				"ReadWriteMany",
 			}),

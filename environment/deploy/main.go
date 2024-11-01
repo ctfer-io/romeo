@@ -25,9 +25,10 @@ func main() {
 
 		// Deploy a Romeo instance
 		romeo, err := parts.NewRomeoEnvironment(ctx, "deploy", &parts.RomeoEnvironmentArgs{
-			Namespace: pulumi.String(cfg.Get("namespace")),
-			Tag:       pulumi.String(cfg.Get("tag")),
-			ClaimName: pulumi.StringPtrFromPtr(strPtr(cfg, "claim-name")),
+			Namespace:        pulumi.String(cfg.Get("namespace")),
+			Tag:              pulumi.String(cfg.Get("tag")),
+			StorageClassName: pulumi.StringPtrFromPtr(strPtr(cfg, "storage-class-name")),
+			ClaimName:        pulumi.StringPtrFromPtr(strPtr(cfg, "claim-name")),
 		}, opts...)
 		if err != nil {
 			return err

@@ -12,6 +12,10 @@ config:
     type: string
     description: 'The Romeo webserver docker tag to use'
     default: 'latest'
+  storage-class-name:
+    type: string
+    description: 'The StorageClassName for the PersistenVolumeClaim (defaults to "longhorn")'
+    default: 'longhorn'
   claim-name:
     type: string
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'

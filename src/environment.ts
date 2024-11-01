@@ -18,6 +18,9 @@ async function run(): Promise<void> {
             'romeo-environment:tag': {
                 value: core.getInput('tag')
             },
+            'romeo-environment:storage-class-name': {
+                value: core.getInput('storage-class-name')
+            },
             'romeo-environment:claim-name': {
                 value: core.getInput('claim-name')
             }
