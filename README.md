@@ -22,15 +22,15 @@ This work based on [this blog post](https://go.dev/blog/integration-test-coverag
 The repository is structured as follows:
 1. [Webserver](webserver) is a Go server exposing an API that remotly executes the Go coverage merge.
 2. The resulting coverage data are later fetched by the [download Action](download).
-3. To deploy this you firstly instanciate a [deployment](deployment).
+3. To deploy this you firstly instanciate an [environment](environment).
 4. To avoid passing a privileged account you can restrein the RBAC accesses with a pre-deployment [install](install).
 
 ## Usage
 
-The recommended process is to run both [install](install) and [deployment](deployment) in a workflow.
+The recommended process is to run both [install](install) and [environment](environment) in a workflow.
 This provides good isolation thus ensure actual Go coverages.
 
-It is acceptable, mostly for performance reasons, to pre-[install](install) Romeo RBAC resources thus only running a [deployment] per workflow.
+It is acceptable, mostly for performance reasons, to pre-[install](install) Romeo RBAC resources thus only running an [environment](environment) per workflow.
 Refer to their own documentation to implement this in your process.
 
 Configure secrets and inputs accordingly to each action/step documentation.
