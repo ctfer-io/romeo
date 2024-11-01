@@ -45,7 +45,10 @@ type (
 		ClaimName pulumi.StringPtrInput
 
 		StorageClassName pulumi.StringPtrInput
-		storageClassName pulumi.StringInput
+		storageClassName pulumi.StringOutput
+
+		StorageSize pulumi.StringPtrInput
+		storageSize pulumi.StringOutput
 
 		Namespace pulumi.StringInput
 	}
@@ -59,19 +62,9 @@ const (
 // The Romeo variable could be reused as a Pulumi ressource i.e. could
 // be a dependency, consumes inputs and produces outputs, etc.
 func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (*RomeoEnvironment, error) {
-	if args == nil {
-		args = &RomeoEnvironmentArgs{}
-	}
-	if args.Tag == nil || args.Tag == pulumi.String("") {
-		args.Tag = pulumi.String("dev").ToStringOutput()
-	}
-	args.tag = args.Tag.ToStringPtrOutput().Elem()
-	if args.StorageClassName == nil || args.StorageClassName == pulumi.String("") {
-		args.StorageClassName = pulumi.StringPtr("longhorn")
-	}
-	args.storageClassName = args.storageClassName.ToStringOutput()
-
 	romeo := &RomeoEnvironment{}
+
+	args = romeo.process(args)
 	if err := ctx.RegisterComponentResource("ctfer-io:romeo:environment", name, romeo, opts...); err != nil {
 		return nil, err
 	}
@@ -82,6 +75,32 @@ func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmen
 	romeo.outputs()
 
 	return romeo, nil
+}
+
+func (romeo *RomeoEnvironment) process(args *RomeoEnvironmentArgs) *RomeoEnvironmentArgs {
+	if args == nil {
+		args = &RomeoEnvironmentArgs{}
+	}
+
+	// Default tag to dev
+	if args.Tag == nil || args.Tag == pulumi.String("") {
+		args.Tag = pulumi.String("dev").ToStringOutput()
+	}
+	args.tag = args.Tag.ToStringPtrOutput().Elem()
+
+	// Default storage class name to longhorn
+	if args.StorageClassName == nil || args.StorageClassName == pulumi.String("") {
+		args.StorageClassName = pulumi.StringPtr("longhorn")
+	}
+	args.storageClassName = args.StorageClassName.ToStringPtrOutput().Elem()
+
+	// Default storage size to 50M
+	if args.StorageSize == nil || args.StorageSize == pulumi.String("") {
+		args.StorageSize = pulumi.StringPtr("50M")
+	}
+	args.storageSize = args.StorageSize.ToStringPtrOutput().Elem()
+
+	return args
 }
 
 func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (err error) {
@@ -113,9 +132,9 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 				"ReadWriteMany",
 			}),
 			Resources: corev1.VolumeResourceRequirementsArgs{
-				Requests: pulumi.ToStringMap(map[string]string{
-					"storage": "1Gi",
-				}),
+				Requests: pulumi.StringMap{
+					"storage": args.storageSize,
+				},
 			},
 		},
 	}, opts...)

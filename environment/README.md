@@ -35,6 +35,8 @@ At the end of the Action, it will delete the deployed resources.
 | `kubeconfig` | String |  | **Required.** The kubeconfig to use for deploying a Romeo environment. |
 | `namespace` | String |  | The namespace in which to deploy, in case the kubeconfig has access to many. |
 | `tag` | String | `latest` | **Required.** The [Romeo webserver docker tag](https://hub.docker.com/r/ctferio/romeo/tags) to use. |
+| `storage-class-name` | String | `longhorn` | **Required.** The StorageClassName for the PersistenVolumeClaim. |
+| `storage-size` | String | `50M` | **Required.** The storage size. |
 | `claim-name` | String |  | If specified, turns on Romeo's coverage export in the given PersistenVolumeClaim name. This should only be used by CTFer.io to test Romeo itself. |
 
 #### Outputs

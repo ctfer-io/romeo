@@ -28,6 +28,7 @@ func main() {
 			Namespace:        pulumi.String(cfg.Get("namespace")),
 			Tag:              pulumi.String(cfg.Get("tag")),
 			StorageClassName: pulumi.StringPtrFromPtr(strPtr(cfg, "storage-class-name")),
+			StorageSize:      pulumi.StringPtrFromPtr(strPtr(cfg, "storage-size")),
 			ClaimName:        pulumi.StringPtrFromPtr(strPtr(cfg, "claim-name")),
 		}, opts...)
 		if err != nil {

@@ -21,6 +21,9 @@ async function run(): Promise<void> {
             'romeo-environment:storage-class-name': {
                 value: core.getInput('storage-class-name')
             },
+            'romeo-environment:storage-size': {
+                value: core.getInput('storage-size')
+            },
             'romeo-environment:claim-name': {
                 value: core.getInput('claim-name')
             }

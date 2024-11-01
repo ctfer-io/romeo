@@ -16,6 +16,10 @@ config:
     type: string
     description: 'The StorageClassName for the PersistenVolumeClaim (defaults to "longhorn")'
     default: 'longhorn'
+  storage-size:
+    type: string
+    description: 'The storage size'
+    default: '50M'
   claim-name:
     type: string
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'

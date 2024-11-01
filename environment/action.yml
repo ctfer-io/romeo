@@ -16,9 +16,16 @@ inputs:
     description: 'The Romeo webserver docker tag to use'
     required: true
     default: 'latest'
+  storage-class-name:
+    description: 'The StorageClassName for the PersistenVolumeClaim'
+    required: true
+    default: 'longhorn'
+  storage-size:
+    description: 'The storage size'
+    required: true
+    default: '50M'
   claim-name:
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
-    required: false
 
 outputs:
   port:
