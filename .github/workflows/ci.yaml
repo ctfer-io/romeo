@@ -55,7 +55,12 @@ jobs:
 
       - name: Unit tests
         run: |
-          go test ./... -run=^Test_U_ -json | tee -a gotest.json
+          export COVERDIR=coverages
+          mkdir "$COVERDIR/"
+          go test ./environment/deploy/... -run=^Test_U_ -coverprofile "$COVERDIR/environment.out" -json | tee -a gotest.json
+          go test ./install/deploy/...     -run=^Test_U_ -coverprofile "$COVERDIR/install.out"     -json | tee -a gotest.json
+          go test ./webserver/...          -run=^Test_U_ -coverprofile "$COVERDIR/webserver.out"   -json | tee -a gotest.json
+          go tool covdata textfmt -i=$COVERDIR -o cov.out
 
       - name: Upload coverage to Coveralls
         uses: shogo82148/actions-goveralls@785c9d68212c91196d3994652647f8721918ba11 # v1.9.0
@@ -70,5 +75,17 @@ jobs:
         with:
           go-version-file: 'go.work'
       
-      - name: go-lint
+      - name: Lint Webserver
         uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+        with:
+          working-directory: webserver
+
+      - name: Lint Environment
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+        with:
+          working-directory: environment/deploy
+
+      - name: Lint Install
+        uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+        with:
+          working-directory: install/deploy
