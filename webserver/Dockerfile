@@ -1,5 +1,5 @@
 # Build stage
-FROM golang:1.23.3@sha256:d56c3e08fe5b27729ee3834854ae8f7015af48fd651cd25d1e3bcf3c19830174 AS builder
+FROM golang:1.23.3@sha256:73f06be4578c9987ce560087e2e2ea6485fb605e3910542cadd8fa09fc5f3e31 AS builder
 
 WORKDIR /go/src
 COPY go.mod go.sum ./
@@ -19,6 +19,6 @@ RUN go build -cover \
 
 
 # Prod stage
-FROM golang:1.23.3@sha256:d56c3e08fe5b27729ee3834854ae8f7015af48fd651cd25d1e3bcf3c19830174
+FROM golang:1.23.3@sha256:73f06be4578c9987ce560087e2e2ea6485fb605e3910542cadd8fa09fc5f3e31
 COPY --from=builder /go/bin/romeo /romeo
 ENTRYPOINT [ "/romeo" ]
