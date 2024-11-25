@@ -27,7 +27,7 @@
         "ci-test": "npx jest",
         "format:write": "npx prettier --write .",
         "format:check": "npx prettier --check .",
-        "lint": "npx eslint src/**/*.ts",
+        "lint": "npx eslint",
         "all": "npm run format:write && npm run lint && npm run build"
     },
     "dependencies": {
