@@ -1,11 +1,19 @@
-import jest from 'eslint-plugin-jest'
-import typescriptEslint from '@typescript-eslint/eslint-plugin'
-import globals from 'globals'
-import tsParser from '@typescript-eslint/parser'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import js from '@eslint/js'
+
+import { fixupConfigRules, fixupPluginRules } from '@eslint/compat'
 import { FlatCompat } from '@eslint/eslintrc'
+import js from '@eslint/js'
+import typescriptEslint from '@typescript-eslint/eslint-plugin'
+import tsParser from '@typescript-eslint/parser'
+import filenames from 'eslint-plugin-filenames'
+import github from 'eslint-plugin-github'
+import _import from 'eslint-plugin-import'
+import noAsyncForeach from 'eslint-plugin-no-async-foreach'
+import globals from 'globals'
+
+import pluginHeader from 'eslint-plugin-header'
+pluginHeader.rules.header.meta.schema = false
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -16,78 +24,120 @@ const compat = new FlatCompat({
 })
 
 export default [
-    ...compat.extends('plugin:github/recommended'),
     {
-        files: ['src/**/*.ts'],
-
+        ignores: ['eslint.config.mjs', '.github/**/*']
+    },
+    ...fixupConfigRules(
+        compat.extends(
+            'eslint:recommended',
+            'plugin:@typescript-eslint/recommended',
+            'plugin:@typescript-eslint/recommended-requiring-type-checking',
+            'plugin:github/recommended',
+            'plugin:github/typescript',
+            'plugin:import/typescript'
+        )
+    ),
+    {
         plugins: {
-            jest,
-            '@typescript-eslint': typescriptEslint
+            '@typescript-eslint': fixupPluginRules(typescriptEslint),
+            filenames: fixupPluginRules(filenames),
+            github: fixupPluginRules(github),
+            import: fixupPluginRules(_import),
+            'no-async-foreach': noAsyncForeach
         },
 
         languageOptions: {
-            globals: {
-                ...globals.node,
-                ...jest.environments.globals.globals
-            },
-
             parser: tsParser,
-            ecmaVersion: 9,
+            ecmaVersion: 5,
             sourceType: 'module',
+
+            globals: {
+                ...globals.node
+            },
 
             parserOptions: {
                 project: './tsconfig.json'
             }
         },
 
+        settings: {
+            'import/resolver': {
+                node: {
+                    moduleDirectory: ['node_modules', 'src']
+                },
+
+                typescript: {}
+            },
+            'import/ignore': ['sinon', 'uuid', '@octokit/plugin-retry']
+        },
+
         rules: {
-            'eslint-comments/no-use': 'off',
+            'filenames/match-regex': ['error', '^[a-z0-9-]+(\\.test)?$'],
+            'i18n-text/no-en': 'off',
+
+            'import/extensions': [
+                'error',
+                {
+                    json: {}
+                }
+            ],
+
+            'import/no-amd': 'error',
+            'import/no-commonjs': 'error',
+            'import/no-cycle': 'error',
+            'import/no-dynamic-require': 'error',
+
+            'import/no-extraneous-dependencies': [
+                'error',
+                {
+                    devDependencies: true
+                }
+            ],
+
             'import/no-namespace': 'off',
-            'no-unused-vars': 'off',
-            '@typescript-eslint/no-unused-vars': 'error',
+            'import/no-unresolved': 'error',
+            'import/no-webpack-loader-syntax': 'error',
 
-            '@typescript-eslint/explicit-member-accessibility': [
+            'import/order': [
                 'error',
                 {
-                    accessibility: 'no-public'
+                    alphabetize: {
+                        order: 'asc'
+                    },
+
+                    'newlines-between': 'always'
                 }
             ],
 
-            '@typescript-eslint/no-require-imports': 'error',
-            '@typescript-eslint/array-type': 'error',
-            '@typescript-eslint/await-thenable': 'error',
-            camelcase: 'off',
-
-            '@typescript-eslint/explicit-function-return-type': [
+            'max-len': [
                 'error',
                 {
-                    allowExpressions: true
+                    code: 120,
+                    ignoreUrls: true,
+                    ignoreStrings: true,
+                    ignoreTemplateLiterals: true
                 }
             ],
 
-            '@typescript-eslint/no-array-constructor': 'error',
-            '@typescript-eslint/no-empty-interface': 'error',
-            '@typescript-eslint/no-explicit-any': 'error',
-            '@typescript-eslint/no-extraneous-class': 'error',
-            '@typescript-eslint/no-floating-promises': 'error',
-            '@typescript-eslint/no-for-in-array': 'error',
-            '@typescript-eslint/no-inferrable-types': 'error',
-            '@typescript-eslint/no-misused-new': 'error',
-            '@typescript-eslint/no-namespace': 'error',
-            '@typescript-eslint/no-non-null-assertion': 'warn',
-            '@typescript-eslint/no-unnecessary-qualifier': 'error',
-            '@typescript-eslint/no-unnecessary-type-assertion': 'error',
-            '@typescript-eslint/no-useless-constructor': 'error',
-            '@typescript-eslint/no-var-requires': 'error',
-            '@typescript-eslint/prefer-for-of': 'warn',
-            '@typescript-eslint/prefer-function-type': 'warn',
-            '@typescript-eslint/prefer-includes': 'error',
-            '@typescript-eslint/prefer-string-starts-ends-with': 'error',
-            '@typescript-eslint/promise-function-async': 'error',
-            '@typescript-eslint/require-array-sort-compare': 'error',
-            '@typescript-eslint/restrict-plus-operands': 'error',
-            semi: 'off',
-            '@typescript-eslint/unbound-method': 'error'
+            'no-async-foreach/no-async-foreach': 'error',
+            'no-sequences': 'error',
+            'no-shadow': 'off',
+            '@typescript-eslint/no-shadow': 'error',
+            'one-var': ['error', 'never']
+        }
+    },
+    {
+        files: ['**/*.ts', '**/*.js'],
+
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-unsafe-assignment': 'off',
+            '@typescript-eslint/no-unsafe-member-access': 'off',
+            '@typescript-eslint/no-var-requires': 'off',
+            '@typescript-eslint/prefer-regexp-exec': 'off',
+            '@typescript-eslint/require-await': 'off',
+            '@typescript-eslint/restrict-template-expressions': 'off',
+            'func-style': 'off'
         }
     }
 ]
