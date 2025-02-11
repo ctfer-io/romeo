@@ -4,25 +4,28 @@ description: Deploy a Romeo environment
 config:
   kubeconfig:
     type: string
-    description: 'The kubeconfig to use for deploying a Romeo environment'
+    description: 'The kubeconfig to use for deploying a Romeo environment.'
   namespace:
     type: string
-    description: 'The namespace in which to deploy, in case the kubeconfig has access to many'
+    description: 'The namespace in which to deploy, in case the kubeconfig has access to many.'
   tag:
     type: string
-    description: 'The Romeo webserver docker tag to use'
+    description: 'The Romeo webserver docker tag to use.'
     default: 'latest'
   storage-class-name:
     type: string
-    description: 'The StorageClassName for the PersistenVolumeClaim (defaults to "longhorn")'
-    default: 'longhorn'
+    description: 'The StorageClassName for the PersistenVolumeClaim.'
   storage-size:
     type: string
-    description: 'The storage size'
+    description: 'The storage size.'
     default: '50M'
   claim-name:
     type: string
-    description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
+    description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name.'
+  pvc-access-mode:
+    type: string
+    description: 'The PVC access mode to use.'
+    default: 'ReadWriteOnce'
 
 author: CTFer.io
 license: Apache-2.0

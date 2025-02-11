@@ -50,6 +50,9 @@ type (
 		StorageSize pulumi.StringPtrInput
 		storageSize pulumi.StringOutput
 
+		PVCAccessModes pulumi.StringArrayInput
+		pvcAccessModes pulumi.StringArrayOutput
+
 		Namespace pulumi.StringInput
 	}
 )
@@ -100,6 +103,20 @@ func (romeo *RomeoEnvironment) process(args *RomeoEnvironmentArgs) *RomeoEnviron
 	}
 	args.storageSize = args.StorageSize.ToStringPtrOutput().Elem()
 
+	// Default PVC access modes to ReadWriteOnce
+	if args.PVCAccessModes == nil {
+		args.pvcAccessModes = pulumi.ToStringArray([]string{
+			"ReadWriteOnce",
+		}).ToStringArrayOutput()
+	} else {
+		args.pvcAccessModes = args.PVCAccessModes.ToStringArrayOutput().ApplyT(func(slc []string) []string {
+			if len(slc) == 0 {
+				return []string{"ReadWriteOnce"}
+			}
+			return slc
+		}).(pulumi.StringArrayOutput)
+	}
+
 	return args
 }
 
@@ -128,9 +145,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 		},
 		Spec: corev1.PersistentVolumeClaimSpecArgs{
 			StorageClassName: args.storageClassName,
-			AccessModes: pulumi.ToStringArray([]string{
-				"ReadWriteMany",
-			}),
+			AccessModes:      args.pvcAccessModes,
 			Resources: corev1.VolumeResourceRequirementsArgs{
 				Requests: pulumi.StringMap{
 					"storage": args.storageSize,
@@ -187,6 +202,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 		volumeMounts = append(volumeMounts, corev1.VolumeMountArgs{
 			Name:      pulumi.String("coverages"),
 			MountPath: path,
+			ReadOnly:  pulumi.BoolPtr(true),
 		})
 		volumes = append(volumes, corev1.VolumeArgs{
 			Name: pulumi.String("coverages"),
