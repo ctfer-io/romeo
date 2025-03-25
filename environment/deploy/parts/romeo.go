@@ -118,7 +118,7 @@ func (romeo *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnviro
 	// Default storage class name to longhorn
 	args.storageClassName = pulumi.String(defaultStorageClassName).ToStringOutput()
 	if args.StorageClassName != nil {
-		args.storageClassName = args.StorageClassName.ToStringPtrOutput().ApplyT(func(scn string) string {
+		args.storageClassName = args.StorageClassName.ToStringOutput().ApplyT(func(scn string) string {
 			if scn == "" {
 				return defaultStorageClassName
 			}
@@ -129,11 +129,11 @@ func (romeo *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnviro
 	// Default storage size to 50M
 	args.storageSize = pulumi.String(defaultStorageSize).ToStringOutput()
 	if args.StorageSize != nil {
-		args.storageSize = args.StorageSize.ToStringPtrOutput().ApplyT(func(size *string) string {
-			if size == nil || *size == "" {
+		args.storageSize = args.StorageSize.ToStringOutput().ApplyT(func(size string) string {
+			if size == "" {
 				return defaultStorageSize
 			}
-			return *size
+			return size
 		}).(pulumi.StringOutput)
 	}
 
@@ -151,17 +151,11 @@ func (romeo *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnviro
 	// Define private registry if any
 	args.privateRegistry = pulumi.String("").ToStringOutput()
 	if args.PrivateRegistry != nil {
-		args.privateRegistry = args.PrivateRegistry.ToStringPtrOutput().ApplyT(func(in *string) string {
-			if in == nil || *in == "" {
-				return ""
+		args.privateRegistry = args.PrivateRegistry.ToStringOutput().ApplyT(func(in string) string {
+			if !strings.HasSuffix(in, "/") {
+				in = in + "/"
 			}
-
-			// If one set, make sure it ends with one '/'
-			str := *in
-			if !strings.HasSuffix(str, "/") {
-				str = str + "/"
-			}
-			return str
+			return in
 		}).(pulumi.StringOutput)
 	}
 
