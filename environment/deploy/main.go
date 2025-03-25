@@ -33,6 +33,7 @@ func main() {
 			PVCAccessModes: pulumi.ToStringArray([]string{
 				cfg.PVCAccessMode,
 			}),
+			PrivateRegistry: pulumi.StringPtrFromPtr(cfg.PrivateRegistry),
 		}, opts...)
 		if err != nil {
 			return err
@@ -48,13 +49,14 @@ func main() {
 }
 
 type Config struct {
-	Kubeconfig       string  `json:"kubeconfig"`
-	Namespace        string  `json:"namespace"`
-	Tag              string  `json:"tag"`
-	StorageClassName string  `json:"storage-class-name"`
-	StorageSize      string  `json:"storage-size"`
-	ClaimName        *string `json:"claim-name"`
-	PVCAccessMode    string  `json:"pvc-access-mode"`
+	Kubeconfig       string
+	Namespace        string
+	Tag              string
+	StorageClassName string
+	StorageSize      string
+	ClaimName        *string
+	PVCAccessMode    string
+	PrivateRegistry  *string
 }
 
 func loadConfig(ctx *pulumi.Context) *Config {
@@ -67,13 +69,14 @@ func loadConfig(ctx *pulumi.Context) *Config {
 		StorageSize:      cfg.Get("storage-size"),
 		ClaimName:        getStrPtr(cfg, "claim-name"),
 		PVCAccessMode:    cfg.Get("pvc-access-mode"),
+		PrivateRegistry:  getStrPtr(cfg, "private-registry"),
 	}
 }
 
 func getStrPtr(cfg *config.Config, key string) *string {
 	v := cfg.Get(key)
-	if v != "" {
-		return &v
+	if v == "" {
+		return nil
 	}
-	return nil
+	return &v
 }

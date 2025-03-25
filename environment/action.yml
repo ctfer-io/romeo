@@ -26,6 +26,9 @@ inputs:
     default: '50M'
   claim-name:
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
+  private-registry:
+    description: 'The private registry to pull images from.'
+    required: false
 
 outputs:
   port:

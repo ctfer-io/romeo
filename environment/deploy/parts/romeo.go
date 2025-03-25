@@ -3,6 +3,7 @@ package parts
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
@@ -54,11 +55,27 @@ type (
 		pvcAccessModes pulumi.StringArrayOutput
 
 		Namespace pulumi.StringInput
+
+		pvcAccessModes pulumi.StringArrayOutput
+		PVCAccessModes pulumi.StringArrayInput
+
+		// PrivateRegistry define from where to fetch the Chall-Manager Docker images.
+		// If set empty, defaults to Docker Hub.
+		// Authentication is not supported, please provide it as Kubernetes-level configuration.
+		PrivateRegistry pulumi.StringPtrInput
+		privateRegistry pulumi.StringOutput
 	}
 )
 
 const (
-	coverdir = "/tmp/coverdir"
+	coverdir                = "/tmp/coverdir"
+	defaultTag              = "dev"
+	defaultStorageClassName = "longhorn"
+	defaultStorageSize      = "50M"
+)
+
+var (
+	defaultPVCAccessModes = []string{"ReadWriteOnce"}
 )
 
 // NewRomeoEnvironment deploys a Romeo instance on Kubernetes.
@@ -67,7 +84,7 @@ const (
 func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (*RomeoEnvironment, error) {
 	romeo := &RomeoEnvironment{}
 
-	args = romeo.process(args)
+	args = romeo.defaults(args)
 	if err := ctx.RegisterComponentResource("ctfer-io:romeo:environment", name, romeo, opts...); err != nil {
 		return nil, err
 	}
@@ -75,33 +92,75 @@ func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmen
 	if err := romeo.provision(ctx, args, opts...); err != nil {
 		return nil, err
 	}
-	romeo.outputs()
+	if err := romeo.outputs(ctx); err != nil {
+		return nil, err
+	}
 
 	return romeo, nil
 }
 
-func (romeo *RomeoEnvironment) process(args *RomeoEnvironmentArgs) *RomeoEnvironmentArgs {
+func (romeo *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnvironmentArgs {
 	if args == nil {
 		args = &RomeoEnvironmentArgs{}
 	}
 
 	// Default tag to dev
-	if args.Tag == nil || args.Tag == pulumi.String("") {
-		args.Tag = pulumi.String("dev").ToStringOutput()
+	args.tag = pulumi.String(defaultTag).ToStringOutput()
+	if args.Tag != nil {
+		args.tag = args.Tag.ToStringOutput().ApplyT(func(tag string) string {
+			if tag == "" {
+				return defaultTag
+			}
+			return tag
+		}).(pulumi.StringOutput)
 	}
-	args.tag = args.Tag.ToStringPtrOutput().Elem()
 
 	// Default storage class name to longhorn
-	if args.StorageClassName == nil || args.StorageClassName == pulumi.String("") {
-		args.StorageClassName = pulumi.StringPtr("longhorn")
+	args.storageClassName = pulumi.String(defaultStorageClassName).ToStringOutput()
+	if args.StorageClassName != nil {
+		args.storageClassName = args.StorageClassName.ToStringPtrOutput().ApplyT(func(scn string) string {
+			if scn == "" {
+				return defaultStorageClassName
+			}
+			return scn
+		}).(pulumi.StringOutput)
 	}
-	args.storageClassName = args.StorageClassName.ToStringPtrOutput().Elem()
 
 	// Default storage size to 50M
-	if args.StorageSize == nil || args.StorageSize == pulumi.String("") {
-		args.StorageSize = pulumi.StringPtr("50M")
+	args.storageSize = pulumi.String(defaultStorageSize).ToStringOutput()
+	if args.StorageSize != nil {
+		args.storageSize = args.StorageSize.ToStringPtrOutput().ApplyT(func(size *string) string {
+			if size == nil || *size == "" {
+				return defaultStorageSize
+			}
+			return *size
+		}).(pulumi.StringOutput)
 	}
-	args.storageSize = args.StorageSize.ToStringPtrOutput().Elem()
+
+	// Default PVC access modes to ReadWriteOnce
+	args.pvcAccessModes = pulumi.ToStringArray(defaultPVCAccessModes).ToStringArrayOutput()
+	if args.PVCAccessModes != nil {
+		args.pvcAccessModes = args.PVCAccessModes.ToStringArrayOutput().ApplyT(func(pvcAccessModes []string) []string {
+			if len(pvcAccessModes) == 0 {
+				return defaultPVCAccessModes
+			}
+			return pvcAccessModes
+		}).(pulumi.StringArrayOutput)
+	}
+
+	// Define private registry if any
+	args.privateRegistry = pulumi.String("").ToStringOutput()
+	if args.PrivateRegistry != nil {
+		args.privateRegistry = args.PrivateRegistry.ToStringPtrOutput().ApplyT(func(in *string) string {
+			str := *in
+
+			// If one set, make sure it ends with one '/'
+			if str != "" && !strings.HasSuffix(str, "/") {
+				str = str + "/"
+			}
+			return str
+		}).(pulumi.StringOutput)
+	}
 
 	// Default PVC access modes to ReadWriteOnce
 	if args.PVCAccessModes == nil {
@@ -245,7 +304,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 					Containers: corev1.ContainerArray{
 						corev1.ContainerArgs{
 							Name:            pulumi.String("romeo"),
-							Image:           pulumi.Sprintf("ctferio/romeo:%s", args.tag),
+							Image:           pulumi.Sprintf("%sctferio/romeo:%s", args.privateRegistry, args.tag),
 							ImagePullPolicy: pulumi.String("Always"),
 							Ports: corev1.ContainerPortArray{
 								corev1.ContainerPortArgs{
@@ -299,7 +358,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 	return
 }
 
-func (romeo *RomeoEnvironment) outputs() {
+func (romeo *RomeoEnvironment) outputs(ctx *pulumi.Context) error {
 	romeo.Namespace = romeo.dep.Metadata.Namespace().Elem()
 	romeo.ClaimName = romeo.randName.Result
 	romeo.Port = romeo.svc.Spec.ApplyT(func(spec corev1.ServiceSpec) string {
@@ -308,4 +367,10 @@ func (romeo *RomeoEnvironment) outputs() {
 		}
 		return strconv.Itoa(*spec.Ports[0].NodePort)
 	}).(pulumi.StringOutput)
+
+	return ctx.RegisterResourceOutputs(romeo, pulumi.Map{
+		"namespace":  romeo.Namespace,
+		"claim-name": romeo.ClaimName,
+		"port":       romeo.Port,
+	})
 }
