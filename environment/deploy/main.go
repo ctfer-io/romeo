@@ -27,13 +27,13 @@ func main() {
 		romeo, err := parts.NewRomeoEnvironment(ctx, "deploy", &parts.RomeoEnvironmentArgs{
 			Namespace:        pulumi.String(cfg.Namespace),
 			Tag:              pulumi.String(cfg.Tag),
-			StorageClassName: pulumi.StringPtr(cfg.StorageClassName),
-			StorageSize:      pulumi.StringPtr(cfg.StorageSize),
-			ClaimName:        pulumi.StringPtrFromPtr(cfg.ClaimName),
+			StorageClassName: pulumi.String(cfg.StorageClassName),
+			StorageSize:      pulumi.String(cfg.StorageSize),
+			ClaimName:        pulumi.String(cfg.ClaimName),
 			PVCAccessModes: pulumi.ToStringArray([]string{
 				cfg.PVCAccessMode,
 			}),
-			PrivateRegistry: pulumi.StringPtrFromPtr(cfg.PrivateRegistry),
+			PrivateRegistry: pulumi.String(cfg.PrivateRegistry),
 		}, opts...)
 		if err != nil {
 			return err
@@ -54,9 +54,9 @@ type Config struct {
 	Tag              string
 	StorageClassName string
 	StorageSize      string
-	ClaimName        *string
+	ClaimName        string
 	PVCAccessMode    string
-	PrivateRegistry  *string
+	PrivateRegistry  string
 }
 
 func loadConfig(ctx *pulumi.Context) *Config {
@@ -67,16 +67,8 @@ func loadConfig(ctx *pulumi.Context) *Config {
 		Tag:              cfg.Get("tag"),
 		StorageClassName: cfg.Get("storage-class-name"),
 		StorageSize:      cfg.Get("storage-size"),
-		ClaimName:        getStrPtr(cfg, "claim-name"),
+		ClaimName:        cfg.Get("claim-name"),
 		PVCAccessMode:    cfg.Get("pvc-access-mode"),
-		PrivateRegistry:  getStrPtr(cfg, "private-registry"),
+		PrivateRegistry:  cfg.Get("private-registry"),
 	}
-}
-
-func getStrPtr(cfg *config.Config, key string) *string {
-	v := cfg.Get(key)
-	if v == "" {
-		return nil
-	}
-	return &v
 }

@@ -43,12 +43,12 @@ type (
 		Tag pulumi.StringInput
 		tag pulumi.StringOutput
 
-		ClaimName pulumi.StringPtrInput
+		ClaimName pulumi.StringInput
 
-		StorageClassName pulumi.StringPtrInput
+		StorageClassName pulumi.StringInput
 		storageClassName pulumi.StringOutput
 
-		StorageSize pulumi.StringPtrInput
+		StorageSize pulumi.StringInput
 		storageSize pulumi.StringOutput
 
 		PVCAccessModes pulumi.StringArrayInput
@@ -62,7 +62,7 @@ type (
 		// PrivateRegistry define from where to fetch the Chall-Manager Docker images.
 		// If set empty, defaults to Docker Hub.
 		// Authentication is not supported, please provide it as Kubernetes-level configuration.
-		PrivateRegistry pulumi.StringPtrInput
+		PrivateRegistry pulumi.StringInput
 		privateRegistry pulumi.StringOutput
 	}
 )
@@ -152,10 +152,13 @@ func (romeo *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnviro
 	args.privateRegistry = pulumi.String("").ToStringOutput()
 	if args.PrivateRegistry != nil {
 		args.privateRegistry = args.PrivateRegistry.ToStringPtrOutput().ApplyT(func(in *string) string {
-			str := *in
+			if in == nil || *in == "" {
+				return ""
+			}
 
 			// If one set, make sure it ends with one '/'
-			if str != "" && !strings.HasSuffix(str, "/") {
+			str := *in
+			if !strings.HasSuffix(str, "/") {
 				str = str + "/"
 			}
 			return str
