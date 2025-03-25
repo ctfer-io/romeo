@@ -82,8 +82,9 @@ jobs:
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@e44b82aba1cc3afbe4e328e99029a97e8e394315
+        uses: ctfer-io/romeo/environment@c1342605223762f3c4ef9728b8267d52f0c9bb9c
         with:
+          private-registry: localhost:5000
           kubeconfig: ~/.kube/config
           namespace: romeo-in-ci
           storage-class-name: standard
@@ -91,8 +92,9 @@ jobs:
 
       - name: Romeo environment under test
         id: env-test
-        uses: ctfer-io/romeo/environment@e44b82aba1cc3afbe4e328e99029a97e8e394315
+        uses: ctfer-io/romeo/environment@c1342605223762f3c4ef9728b8267d52f0c9bb9c
         with:
+          private-registry: localhost:5000
           kubeconfig: ~/.kube/config
           storage-class-name: standard
           tag: ${{ github.sha }}
