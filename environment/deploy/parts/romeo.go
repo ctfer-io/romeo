@@ -231,8 +231,11 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 			},
 		},
 	}
-	fmt.Printf("args.ClaimName: %[1]T %[1]v\n", args.ClaimName)
 	if args.ClaimName != nil {
+		args.ClaimName.ToStringPtrOutput().ApplyT(func(cm string) error {
+			fmt.Printf("claim-name: %s\n", cm)
+			return nil
+		})
 		// If coverage is turned on, export coverages in a random directory
 		// that is different from coverdir (ensure no collision).
 		romeo.coverRand, err = random.NewRandomString(ctx, "cover-rand", &random.RandomStringArgs{
