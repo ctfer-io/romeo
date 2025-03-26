@@ -29,7 +29,7 @@ func main() {
 			Tag:              pulumi.String(cfg.Tag),
 			StorageClassName: pulumi.String(cfg.StorageClassName),
 			StorageSize:      pulumi.String(cfg.StorageSize),
-			ClaimName:        pulumi.String(cfg.ClaimName),
+			ClaimName:        pulumi.StringPtrFromPtr(cfg.ClaimName),
 			PVCAccessModes: pulumi.ToStringArray([]string{
 				cfg.PVCAccessMode,
 			}),
@@ -54,7 +54,7 @@ type Config struct {
 	Tag              string
 	StorageClassName string
 	StorageSize      string
-	ClaimName        string
+	ClaimName        *string // optional
 	PVCAccessMode    string
 	PrivateRegistry  string
 }
@@ -67,8 +67,16 @@ func loadConfig(ctx *pulumi.Context) *Config {
 		Tag:              cfg.Get("tag"),
 		StorageClassName: cfg.Get("storage-class-name"),
 		StorageSize:      cfg.Get("storage-size"),
-		ClaimName:        cfg.Get("claim-name"),
+		ClaimName:        getStrPtr(ctx, "claim-name"),
 		PVCAccessMode:    cfg.Get("pvc-access-mode"),
 		PrivateRegistry:  cfg.Get("private-registry"),
 	}
+}
+
+func getStrPtr(ctx *pulumi.Context, key string) *string {
+	v, ok := ctx.GetConfig(key)
+	if !ok {
+		return nil
+	}
+	return &v
 }

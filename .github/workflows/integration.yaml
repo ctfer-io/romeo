@@ -97,6 +97,7 @@ jobs:
           private-registry: localhost:5000
           kubeconfig: ~/.kube/config
           storage-class-name: standard
+          claim-name: ${{ steps.env.outputs.claim-name }}
           tag: ${{ github.sha }}
 
       - name: Stimulate

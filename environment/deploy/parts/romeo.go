@@ -43,7 +43,7 @@ type (
 		Tag pulumi.StringInput
 		tag pulumi.StringOutput
 
-		ClaimName pulumi.StringInput
+		ClaimName pulumi.StringPtrInput
 
 		StorageClassName pulumi.StringInput
 		storageClassName pulumi.StringOutput
@@ -51,13 +51,10 @@ type (
 		StorageSize pulumi.StringInput
 		storageSize pulumi.StringOutput
 
-		PVCAccessModes pulumi.StringArrayInput
-		pvcAccessModes pulumi.StringArrayOutput
-
 		Namespace pulumi.StringInput
 
-		pvcAccessModes pulumi.StringArrayOutput
 		PVCAccessModes pulumi.StringArrayInput
+		pvcAccessModes pulumi.StringArrayOutput
 
 		// PrivateRegistry define from where to fetch the Chall-Manager Docker images.
 		// If set empty, defaults to Docker Hub.
