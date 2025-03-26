@@ -123,8 +123,12 @@ func run(ctx *cli.Context) error {
 
 func download(ctx *cli.Context) error {
 	// Download coverages
-	fmt.Println("Downloading coverages...")
-	req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/coverout", ctx.String("server")), nil)
+	server := ctx.String("server")
+	fmt.Printf("Downloading coverages from %s...\n", server)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/v1/coverout", server), nil)
+	if err != nil {
+		return err
+	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err

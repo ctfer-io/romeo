@@ -9,11 +9,11 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		cfg := config.New(ctx, "romeo-environment")
+		cfg := loadConfig(ctx)
 
 		// Build Kubernetes provider
 		pv, err := kubernetes.NewProvider(ctx, "provider", &kubernetes.ProviderArgs{
-			Kubeconfig: pulumi.String(cfg.Require("kubeconfig")),
+			Kubeconfig: pulumi.String(cfg.Kubeconfig),
 		})
 		if err != nil {
 			return err
@@ -25,11 +25,14 @@ func main() {
 
 		// Deploy a Romeo instance
 		romeo, err := parts.NewRomeoEnvironment(ctx, "deploy", &parts.RomeoEnvironmentArgs{
-			Namespace:        pulumi.String(cfg.Get("namespace")),
-			Tag:              pulumi.String(cfg.Get("tag")),
-			StorageClassName: pulumi.StringPtrFromPtr(strPtr(cfg, "storage-class-name")),
-			StorageSize:      pulumi.StringPtrFromPtr(strPtr(cfg, "storage-size")),
-			ClaimName:        pulumi.StringPtrFromPtr(strPtr(cfg, "claim-name")),
+			Namespace:        pulumi.String(cfg.Namespace),
+			Tag:              pulumi.String(cfg.Tag),
+			StorageClassName: pulumi.StringPtr(cfg.StorageClassName),
+			StorageSize:      pulumi.StringPtr(cfg.StorageSize),
+			ClaimName:        pulumi.StringPtrFromPtr(cfg.ClaimName),
+			PVCAccessModes: pulumi.ToStringArray([]string{
+				cfg.PVCAccessMode,
+			}),
 		}, opts...)
 		if err != nil {
 			return err
@@ -44,10 +47,33 @@ func main() {
 	})
 }
 
-func strPtr(cfg *config.Config, key string) *string {
-	v := cfg.Get(key)
-	if v == "" {
-		return nil
+type Config struct {
+	Kubeconfig       string  `json:"kubeconfig"`
+	Namespace        string  `json:"namespace"`
+	Tag              string  `json:"tag"`
+	StorageClassName string  `json:"storage-class-name"`
+	StorageSize      string  `json:"storage-size"`
+	ClaimName        *string `json:"claim-name"`
+	PVCAccessMode    string  `json:"pvc-access-mode"`
+}
+
+func loadConfig(ctx *pulumi.Context) *Config {
+	cfg := config.New(ctx, "")
+	return &Config{
+		Kubeconfig:       cfg.Require("kubeconfig"),
+		Namespace:        cfg.Get("namespace"),
+		Tag:              cfg.Get("tag"),
+		StorageClassName: cfg.Get("storage-class-name"),
+		StorageSize:      cfg.Get("storage-size"),
+		ClaimName:        getStrPtr(cfg, "claim-name"),
+		PVCAccessMode:    cfg.Get("pvc-access-mode"),
 	}
-	return &v
+}
+
+func getStrPtr(cfg *config.Config, key string) *string {
+	v := cfg.Get(key)
+	if v != "" {
+		return &v
+	}
+	return nil
 }
