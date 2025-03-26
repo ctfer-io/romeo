@@ -36,6 +36,9 @@ jobs:
                 "service-node-port-range": "30000-30005"
           nodes:
           - role: control-plane
+            extraMounts:
+            - hostPath: /var/lib/longhorn
+              containerPath: /var/lib/longhorn
             extraPortMappings:
             - containerPort: 80
               hostPort: 80
@@ -60,6 +63,9 @@ jobs:
           cluster_name: kind
         env:
           KIND_EXPERIMENTAL_DOCKER_NETWORK: kind
+      - name: Install longhorn
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.7.2/deploy/longhorn.yaml
 
       - name: Export server URL
         id: server
@@ -87,7 +93,6 @@ jobs:
           private-registry: localhost:5000
           kubeconfig: ~/.kube/config
           namespace: romeo-in-ci
-          storage-class-name: standard
           tag: ${{ github.sha }}
 
       - name: Romeo environment under test
@@ -97,7 +102,6 @@ jobs:
           private-registry: localhost:5000
           kubeconfig: ~/.kube/config
           namespace: ${{ steps.env.outputs.namespace }}
-          storage-class-name: standard
           claim-name: ${{ steps.env.outputs.claim-name }}
           tag: ${{ github.sha }}
 
