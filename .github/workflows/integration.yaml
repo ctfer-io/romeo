@@ -96,6 +96,7 @@ jobs:
         with:
           private-registry: localhost:5000
           kubeconfig: ~/.kube/config
+          namespace: ${{ steps.env.outputs.namespace }}
           storage-class-name: standard
           claim-name: ${{ steps.env.outputs.claim-name }}
           tag: ${{ github.sha }}
