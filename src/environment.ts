@@ -9,25 +9,25 @@ async function run(): Promise<void> {
         const stack = await iac.getStack(stackName)
 
         await stack.setAllConfig({
-            ':kubeconfig': {
+            'env:kubeconfig': {
                 value: core.getInput('kubeconfig')
             },
-            ':namespace': {
+            'env:namespace': {
                 value: core.getInput('namespace')
             },
-            ':tag': {
+            'env:tag': {
                 value: core.getInput('tag')
             },
-            ':storage-class-name': {
+            'env:storage-class-name': {
                 value: core.getInput('storage-class-name')
             },
-            ':storage-size': {
+            'env:storage-size': {
                 value: core.getInput('storage-size')
             },
-            ':claim-name': {
+            'env:claim-name': {
                 value: core.getInput('claim-name')
             },
-            ':private-registry': {
+            'env:private-registry': {
                 value: core.getInput('private-registry')
             }
         })

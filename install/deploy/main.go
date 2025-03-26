@@ -12,7 +12,7 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		cfg := config.New(ctx, "")
+		cfg := config.New(ctx, "install")
 
 		// Build Kubernetes provider
 		kubeconfig := cfg.Require("kubeconfig")

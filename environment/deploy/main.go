@@ -60,7 +60,7 @@ type Config struct {
 }
 
 func loadConfig(ctx *pulumi.Context) *Config {
-	cfg := config.New(ctx, "")
+	cfg := config.New(ctx, "env")
 	return &Config{
 		Kubeconfig:       cfg.Require("kubeconfig"),
 		Namespace:        cfg.Get("namespace"),
@@ -74,7 +74,7 @@ func loadConfig(ctx *pulumi.Context) *Config {
 }
 
 func getStrPtr(ctx *pulumi.Context, key string) *string {
-	v, ok := ctx.GetConfig(key)
+	v, ok := ctx.GetConfig("env:" + key)
 	if !ok {
 		return nil
 	}

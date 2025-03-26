@@ -41,13 +41,13 @@ async function run() {
     try {
         const stack = await iac.getStack(stackName);
         await stack.setAllConfig({
-            ':kubeconfig': {
+            'install:kubeconfig': {
                 value: core.getInput('kubeconfig')
             },
-            ':namespace': {
+            'install:namespace': {
                 value: core.getInput('namespace')
             },
-            ':api-server': {
+            'install:api-server': {
                 value: core.getInput('api-server')
             }
         });
