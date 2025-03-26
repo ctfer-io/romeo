@@ -82,7 +82,7 @@ jobs:
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@dac34e1146ba386f2faabb8a057dd0a8e2db29e8
+        uses: ctfer-io/romeo/environment@6b34415e18373c429ef6edb9bc9a9ca2928d01e2
         with:
           private-registry: localhost:5000
           kubeconfig: ~/.kube/config
@@ -92,7 +92,7 @@ jobs:
 
       - name: Romeo environment under test
         id: env-test
-        uses: ctfer-io/romeo/environment@dac34e1146ba386f2faabb8a057dd0a8e2db29e8
+        uses: ctfer-io/romeo/environment@6b34415e18373c429ef6edb9bc9a9ca2928d01e2
         with:
           private-registry: localhost:5000
           kubeconfig: ~/.kube/config
