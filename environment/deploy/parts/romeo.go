@@ -44,6 +44,7 @@ type (
 		tag pulumi.StringOutput
 
 		ClaimName pulumi.StringPtrInput
+		withClaim bool
 
 		StorageClassName pulumi.StringInput
 		storageClassName pulumi.StringOutput
@@ -82,6 +83,9 @@ func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmen
 	romeo := &RomeoEnvironment{}
 
 	args = romeo.defaults(args)
+	if err := romeo.check(args); err != nil {
+		return nil, err
+	}
 	if err := ctx.RegisterComponentResource("ctfer-io:romeo:environment", name, romeo, opts...); err != nil {
 		return nil, err
 	}
@@ -173,6 +177,19 @@ func (romeo *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnviro
 	return args
 }
 
+func (romeo *RomeoEnvironment) check(args *RomeoEnvironmentArgs) error {
+	// triggers
+	if args.ClaimName != nil {
+		args.ClaimName.ToStringPtrOutput().ApplyT(func(cm *string) error {
+			args.withClaim = cm != nil && *cm != ""
+			return nil
+		})
+	}
+
+	// no check to run actually
+	return nil
+}
+
 func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (err error) {
 	// Generate unique (random enough) PVC name
 	romeo.randName, err = random.NewRandomString(ctx, "romeo-name", &random.RandomStringArgs{
@@ -231,14 +248,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 			},
 		},
 	}
-	if args.ClaimName != nil {
-		args.ClaimName.ToStringPtrOutput().ApplyT(func(cm *string) error {
-			fmt.Printf("claim-name: %v\n", cm)
-			if cm != nil {
-				fmt.Printf("claim-name 2: %s\n", *cm)
-			}
-			return nil
-		})
+	if args.withClaim {
 		// If coverage is turned on, export coverages in a random directory
 		// that is different from coverdir (ensure no collision).
 		romeo.coverRand, err = random.NewRandomString(ctx, "cover-rand", &random.RandomStringArgs{
