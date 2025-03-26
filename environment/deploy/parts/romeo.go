@@ -232,8 +232,11 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 		},
 	}
 	if args.ClaimName != nil {
-		args.ClaimName.ToStringPtrOutput().ApplyT(func(cm string) error {
-			fmt.Printf("claim-name: %s\n", cm)
+		args.ClaimName.ToStringPtrOutput().ApplyT(func(cm *string) error {
+			fmt.Printf("claim-name: %v\n", cm)
+			if cm != nil {
+				fmt.Printf("claim-name 2: %s\n", cm)
+			}
 			return nil
 		})
 		// If coverage is turned on, export coverages in a random directory
