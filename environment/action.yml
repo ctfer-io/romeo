@@ -10,25 +10,20 @@ inputs:
     description: 'The kubeconfig to use for deploying a Romeo environment'
     required: true
   namespace:
-    description: 'The namespace in which to deploy, in case the kubeconfig has access to many'
-    required: false
+    description: 'The namespace in which to deploy, in case the kubeconfig has access to many. If not defined, will create one.'
   tag:
     description: 'The Romeo webserver docker tag to use'
-    required: true
     default: 'latest'
   storage-class-name:
     description: 'The StorageClassName for the PersistenVolumeClaim'
-    required: true
     default: 'longhorn'
   storage-size:
     description: 'The storage size'
-    required: true
     default: '50M'
   claim-name:
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
   private-registry:
-    description: 'The private registry to pull images from.'
-    required: false
+    description: 'The private registry to pull images from'
 
 outputs:
   port:

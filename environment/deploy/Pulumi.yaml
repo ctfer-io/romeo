@@ -1,4 +1,4 @@
-name: romeo-environment
+name: env
 runtime: go
 description: Deploy a Romeo environment
 config:

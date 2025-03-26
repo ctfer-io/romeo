@@ -1,4 +1,4 @@
-name: romeo-install
+name: install
 runtime: go
 description: The Kubernetes IaC to install Romeo.
 config:
