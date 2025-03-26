@@ -235,7 +235,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 		args.ClaimName.ToStringPtrOutput().ApplyT(func(cm *string) error {
 			fmt.Printf("claim-name: %v\n", cm)
 			if cm != nil {
-				fmt.Printf("claim-name 2: %s\n", cm)
+				fmt.Printf("claim-name 2: %s\n", *cm)
 			}
 			return nil
 		})
