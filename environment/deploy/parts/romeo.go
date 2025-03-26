@@ -150,7 +150,7 @@ func (romeo *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnviro
 	if args.PrivateRegistry != nil {
 		args.privateRegistry = args.PrivateRegistry.ToStringOutput().ApplyT(func(in string) string {
 			if !strings.HasSuffix(in, "/") {
-				in = in + "/"
+				in += "/"
 			}
 			return in
 		}).(pulumi.StringOutput)

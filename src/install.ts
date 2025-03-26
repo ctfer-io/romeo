@@ -9,13 +9,13 @@ async function run(): Promise<void> {
         const stack = await iac.getStack(stackName)
 
         await stack.setAllConfig({
-            'romeo-install:kubeconfig': {
+            ':kubeconfig': {
                 value: core.getInput('kubeconfig')
             },
-            'romeo-install:namespace': {
+            ':namespace': {
                 value: core.getInput('namespace')
             },
-            'romeo-install:api-server': {
+            ':api-server': {
                 value: core.getInput('api-server')
             }
         })

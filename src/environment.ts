@@ -9,23 +9,26 @@ async function run(): Promise<void> {
         const stack = await iac.getStack(stackName)
 
         await stack.setAllConfig({
-            'romeo-environment:kubeconfig': {
+            ':kubeconfig': {
                 value: core.getInput('kubeconfig')
             },
-            'romeo-environment:namespace': {
+            ':namespace': {
                 value: core.getInput('namespace')
             },
-            'romeo-environment:tag': {
+            ':tag': {
                 value: core.getInput('tag')
             },
-            'romeo-environment:storage-class-name': {
+            ':storage-class-name': {
                 value: core.getInput('storage-class-name')
             },
-            'romeo-environment:storage-size': {
+            ':storage-size': {
                 value: core.getInput('storage-size')
             },
-            'romeo-environment:claim-name': {
+            ':claim-name': {
                 value: core.getInput('claim-name')
+            },
+            ':private-registry': {
+                value: core.getInput('private-registry')
             }
         })
 

@@ -12,7 +12,7 @@ import (
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		cfg := config.New(ctx, "romeo-install")
+		cfg := config.New(ctx, "")
 
 		// Build Kubernetes provider
 		kubeconfig := cfg.Require("kubeconfig")

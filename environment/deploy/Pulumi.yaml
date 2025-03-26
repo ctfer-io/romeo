@@ -19,6 +19,9 @@ config:
     type: string
     description: 'The storage size.'
     default: '50M'
+  private-registry:
+    type: string
+    description: 'The Docker private registry to download chall-manager images from.'
   claim-name:
     type: string
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name.'
