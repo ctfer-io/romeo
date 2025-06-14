@@ -36,11 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getStack = getStack;
 const automation_1 = require("@pulumi/pulumi/automation");
 const upath = __importStar(require("upath"));
-async function getStack(dst) {
+async function getStack(stackName, dst) {
     // Create our stack using a local program
     // in the ../deploy directory
     const args = {
-        stackName: 'romeo',
+        stackName: stackName,
         // All Romeo actions IaC are contained in <action>/deploy so we only need the action name
         workDir: upath.joinSafe(__dirname, '..', dst, 'deploy')
     };

@@ -10,30 +10,40 @@
     <img src="https://img.shields.io/badge/slsa-level%203-green?style=for-the-badge" alt="SLSA Level 3">
 </div>
 
+Romeo gives the capability to **reach high code coverage** of Go ≥1.20 apps.
+It helps measuring code coverage for **functional and integration tests** within GitHub Actions.
+
+Nevertheless, it is not limited to these use cases.
+For instance it can be used for **in-production code coverage** measurement, which could serve for process mining, code debloating, and so on.
+
+The design is generic so **whatever your software testing technology stack is**, it might fit your needs: Helm, Terraform, Pulumi, RobotFramework, in-house solutions, ... Making adoption of Romeo **low cost**.
+
+This work is based upon [Than McIntosh blog post "Code coverage for Go integration tests"](https://go.dev/blog/integration-test-coverage).
+
 ## How it works
 
-Romeo creates ephemeral environments on a Kubernetes cluster to measure Go binaries coverage.
-This work based on [this blog post](https://go.dev/blog/integration-test-coverage), so require **Go >= 1.20**.
+Romeo creates an **ephemeral environment** on a Kubernetes cluster and provides a `PersistentVolumeClaim` for Go binaries to write coverages into, automatically once compiled with the `-cover` flag and run with the `GOCOVERDIR` environment variable.
+Then the program is tested (functional, integration, smoke, e2e, load/stress, ...), and results are exported as always.
+The coverages are downloaded and written on filesystem, and can then be exported to the provider of your choice: Coveralls.io, SonarQube, ...
 
-<div align="center">
-    <img src="res/workflow.excalidraw.png" alt="The Romeo workflow" height="600px">
-</div>
-
-The repository is structured as follows:
-1. [Webserver](webserver) is a Go server exposing an API that remotly executes the Go coverage merge.
-2. The resulting coverage data are later fetched by the [download Action](download).
-3. To deploy this you firstly instanciate an [environment](environment).
-4. To avoid passing a privileged account you can restrein the RBAC accesses with a pre-deployment [install](install).
+The integration is typically based on 5 steps:
+1. [Install Romeo](./install/) (not required yet recommended)
+2. [Deploy a Romeo environment](./environment/)
+3. Deploy your app and run your tests
+4. [Download the coverages](./download/)
+5. Manipulate them, merge with others, export wherever
 
 ## Usage
 
-The recommended process is to run both [install](install) and [environment](environment) in a workflow.
-This provides good isolation thus ensure actual Go coverages.
+The recommended process is to run both [install](./install) and [environment](./environment) in a workflow.
+This provides good isolation thus ensure actual coverages.
 
-It is acceptable, mostly for performance reasons, to pre-[install](install) Romeo RBAC resources thus only running an [environment](environment) per workflow.
+It is acceptable, mostly for performance reasons, to pre-[install](install) Romeo thus only running an [environment](environment) per workflow.
 Refer to their own documentation to implement this in your process.
 
-Configure secrets and inputs accordingly to each action/step documentation.
+Please configure secrets and inputs accordingly to each step documentation.
+
+An example workflow follows.
 
 ```yaml
 name: Run Go tests
@@ -65,8 +75,11 @@ jobs:
 
       # ... Run your Go unit tests ...
 
-      # Login local by default, you can login somewhere else. Adapt to your needs.
-      - name: Pulumi login
+      # Install Pulumi and login locally (adapt if needed).
+      # Required steps for Romeo to work.
+      - name: Install Pulumi
+        uses: pulumi/actions@v6
+      - name: Prepare environment
         run: |
           pulumi login --local
 
@@ -84,9 +97,9 @@ jobs:
           kubeconfig: ${{ steps.install.outputs.kubeconfig }}
           namespace: ${{ steps.install.outputs.namespace }}
 
-      - name: Run functional tests
+      - name: Run integration tests
         run: |
-          go test ./... -run=^Test_F_ -json | tee -a gotest.json
+          go test ./... -run=^Test_I_ -coverprofile=functional.cov
         env:
           # Use a ServiceAccount with enough privileges to deploy the resources you require.
           # If not possible, you can use an administration account.
@@ -101,9 +114,7 @@ jobs:
         with:
           server: ${{ secrets.SERVER_BASE }}:${{ steps.env.outputs.port }}
 
-      - name: Merge coverages
-        run: |
-          go tool covdata textfmt -i="${{ steps.download.outputs.directory }}" -o cov.out
+      # If you have multiple coverage files, please merge.
 
       - name: Upload coverage to Coveralls
         uses: shogo82148/actions-goveralls@v1
@@ -113,36 +124,7 @@ jobs:
 
 ## Security
 
-### Signature and Attestations
+The security of the [webserver](./webserver/) is detailed [here](./webserver/README.md#security) (signatures, attestations, and SBOMs).
 
-For deployment purposes (and especially in the deployment case of Kubernetes), you may want to ensure the integrity of what you run.
-
-The release assets are SLSA 3 and can be verified using [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) using the following.
-
-```bash
-slsa-verifier verify-artifact "<path/to/release_artifact>"  \
-  --provenance-path "<path/to/release_intoto_attestation>"  \
-  --source-uri "github.com/ctfer-io/romeo" \
-  --source-tag "<tag>"
-```
-
-The Docker image is SLSA 3 and can be verified using [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) using the following.
-
-```bash
-slsa-verifier slsa-verifier verify-image "ctferio/romeo:<tag>@sha256:<digest>" \
-    --source-uri "github.com/ctfer-io/romeo" \
-    --source-tag "<tag>"
-```
-
-Alternatives exist, like [Kyverno](https://kyverno.io/) for a Kubernetes-based deployment.
-
-### SBOMs
-
-A SBOM for the whole repository is generated on each release and can be found in the assets of it.
-They are signed as SLSA 3 assets. Refer to [Signature and Attestations](#signature-and-attestations) to verify their integrity.
-
-A SBOM is generated for the Docker image in its manifest, and can be inspected using the following.
-
-```bash
-docker buildx imagetools inspect "ctferio/romeo:<tag>" \
-    --format "{{ json .SBOM.SPDX }}"
+The Romeo architecture is hardened by design to require only the minimal permissions, within an isolated namespace.
+We accept contributions and issues toward improving this security posture and documentation.
