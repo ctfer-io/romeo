@@ -95,7 +95,6 @@ jobs:
         id: env
         uses: ctfer-io/romeo/environment@e3085a5a3cb35d6f563e44e71876d62166f8b82e
         with:
-          stack-name: env
           registry: localhost:5000
           kubeconfig: ${{ steps.install.outputs.kubeconfig }}
           namespace: ${{ steps.install.outputs.namespace }}
