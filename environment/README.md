@@ -2,18 +2,28 @@
 
 Deploy a Romeo environment from an Action, or manually.
 
-It deploys Kubernetes resources required to extract the Go coverages of binaries under tests/IVV, given the following architecture.
+A Romeo environment provides the capability to measure binaries coverages. It finds most value through tests/IVV, especially for code coverage through functional and integration tests.
+
+The Kubernetes ephemeral infrastructure particularly results in a PersistentVolumeClaim (PVC). It must be mounted within the Pod that contains the measured container. It also exposes a [Romeo webserver](../webserver/) such that its API is reachable by the CI (to extract coverage data).
 
 <div align="center">
     <img src="architecture.excalidraw.png" alt="Romeo environment Kubernetes architecture" width="600px">
 </div>
 
+We recommend **one Romeo environment per container** you are measuring coverages.
+
+To build Romeo-compatible binaries, you must ensure the following:
+1. Go ≥1.20
+1. build the binary with the `-cover` flag
+1. the PVC is mounted within the container
+1. `GOCOVERDIR` is set to the PVC mounting point
+
 ## Usage
 
 ### GitHub Actions
 
-To deploy a Romeo environment from an Action, use `ctfer-io/romeo/environment`.
-It will create the Kubernetes resources. We recommend you deploy a [Romeo install](../install) per workflow run.
+To deploy a Romeo environment from an Action, we recommend you deploy a [Romeo install](../install) yet it is not required.
+In the following steps examples, we consider a Romeo install.
 
 ```yaml
       - name: Romeo environment
@@ -24,26 +34,34 @@ It will create the Kubernetes resources. We recommend you deploy a [Romeo instal
           namespace: ${{ steps.install.outputs.namespace }}
 ```
 
-Once your tests ran, you can [download the coverages](../download).
+You can then mount the PVC claim name (see [outputs](#outputs)) with the technology of your choice : Helm, Terraform, 
 
-At the end of the Action, it will delete the deployed resources.
+> [!IMPORTANT]
+> Your program **must** mount the PVC, but also **run and stop**.
+>
+> If your program is not improperly stopped, or not stopped at all, the coverages are not completly written on disk leading to **incomplete coverages**.
+
+Once your tests ran, you can [download the coverages](../download).
 
 #### Inputs
 
 | Name | Type | Default | Description |
 |---|---|---|---|
+| `stack-name`| String | `env` | The Pulumi stack name. Usefull when deploying multiple Romeo environments within the same context. |
 | `kubeconfig` | String |  | **Required.** The kubeconfig to use for deploying a Romeo environment. |
 | `namespace` | String |  | The namespace in which to deploy, in case the kubeconfig has access to many. |
-| `tag` | String | `latest` | **Required.** The [Romeo webserver docker tag](https://hub.docker.com/r/ctferio/romeo/tags) to use. |
-| `storage-class-name` | String | `longhorn` | **Required.** The StorageClassName for the PersistenVolumeClaim. |
+| `tag` | String | `latest` | The [Romeo webserver docker tag](https://hub.docker.com/r/ctferio/romeo/tags) to use. |
+| `storage-class-name` | String | `standard` | **Required.** The StorageClass name for the PersistenVolumeClaim. |
 | `storage-size` | String | `50M` | **Required.** The storage size. |
 | `claim-name` | String |  | If specified, turns on Romeo's coverage export in the given PersistenVolumeClaim name. This should only be used by CTFer.io to test Romeo itself. |
+| `registry` | String |  | An optional OCI registry to download romeo images from. |
+| `pvc-access-mode` | String |  | The PVC access mode to use. |
 
 #### Outputs
 
 | Name | Type | Description |
 |---|---|---|
-| `port` | String | The port to reach out the Romeo webserver. |
+| `port` | String | The port to reach out the Romeo webserver API, as exposed by the Kubernetes cluster. |
 | `claim-name` | String | The PersistentVolumeClaim name for binaries to mount in order to write coverage data. |
 | `namespace` | String | The namespace in which Romeo has been deployed. Reuse it to target the PersistentVolumeClaim corresponding to the claim-name. |
 
@@ -59,7 +77,7 @@ cd deploy
 
 # Create stack and configure
 export PULUMI_CONFIG_PASSPHRASE="some-secret"
-pulumi stack init --secrets-provider passphrase --stack dev
+pulumi stack init --stack dev
 pulumi config set --secret kubeconfig "$(cat ~/.kube/config)"
 pulumi config set namespace ""
 
