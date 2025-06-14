@@ -151,13 +151,13 @@ jobs:
 
       - name: Romeo install
         id: install
-        uses: ctfer-io/romeo/install@1783ecd458c7591e300d34ac5540af6732f9606b
+        uses: ctfer-io/romeo/install@e3085a5a3cb35d6f563e44e71876d62166f8b82e
         with:
           kubeconfig: ~/.kube/config
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@1783ecd458c7591e300d34ac5540af6732f9606b
+        uses: ctfer-io/romeo/environment@e3085a5a3cb35d6f563e44e71876d62166f8b82e
         with:
           stack-name: env
           registry: localhost:5000
