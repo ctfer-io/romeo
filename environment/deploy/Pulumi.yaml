@@ -1,10 +1,11 @@
-name: romeo-environment
+name: env
 runtime: go
 description: Deploy a Romeo environment
 config:
   kubeconfig:
     type: string
-    description: 'The kubeconfig to use for deploying a Romeo environment.'
+    secret: true
+    description: 'The kubeconfig to use for deploying a Romeo environment (either the content or path).'
   namespace:
     type: string
     description: 'The namespace in which to deploy, in case the kubeconfig has access to many.'
@@ -15,17 +16,21 @@ config:
   storage-class-name:
     type: string
     description: 'The StorageClassName for the PersistenVolumeClaim.'
+    default: 'standard'
   storage-size:
     type: string
     description: 'The storage size.'
     default: '50M'
+  registry:
+    type: string
+    description: 'An optional OCI registry to download romeo images from.'
   claim-name:
     type: string
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name.'
   pvc-access-mode:
     type: string
     description: 'The PVC access mode to use.'
-    default: 'ReadWriteOnce'
+    default: 'ReadWriteMany'
 
 author: CTFer.io
 license: Apache-2.0

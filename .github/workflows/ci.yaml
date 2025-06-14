@@ -35,16 +35,16 @@ jobs:
         id: npm-lint
         run: npm run lint
 
-  go-tests:
+  unit-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
-          go-version-file: 'go.work'
+          go-version-file: "go.work"
 
       - name: Cache go modules
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
@@ -55,17 +55,183 @@ jobs:
 
       - name: Unit tests
         run: |
-          export COVERDIR=coverages
-          mkdir "$COVERDIR/"
-          go test ./environment/deploy/... -run=^Test_U_ -coverprofile "$COVERDIR/environment.out" -json | tee -a gotest.json
-          go test ./install/deploy/...     -run=^Test_U_ -coverprofile "$COVERDIR/install.out"     -json | tee -a gotest.json
-          go test ./webserver/...          -run=^Test_U_ -coverprofile "$COVERDIR/webserver.out"   -json | tee -a gotest.json
-          go tool covdata textfmt -i=$COVERDIR -o cov.out
+          go test ./environment/deploy/... -run=^Test_U_ -coverprofile=environment.cov
+          go test ./install/deploy/...     -run=^Test_U_ -coverprofile=install.cov
+          go test ./webserver/...          -run=^Test_U_ -coverprofile=webserver.cov
+
+          go install go.shabbyrobe.org/gocovmerge/cmd/gocovmerge@fa4f82cfbf4d57c646c1ed0f35002bf1b89fbf7a
+          gocovmerge environment.cov install.cov webserver.cov > unit.cov
+
+      - name: Upload unit tests coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: unit.cov
+          path: unit.cov
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: "go.work"
+
+      - name: Set up Docker registry
+        run: |
+          docker network create kind || true
+          docker run -d --network kind --name registry -p 5000:5000 registry:2
+      - name: Write config file
+        run: |
+          cat <<EOF > kind-config.yaml
+          apiVersion: kind.x-k8s.io/v1alpha4
+          kind: Cluster
+          containerdConfigPatches:
+          - |
+            [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
+              endpoint = ["http://registry:5000"]
+
+          kubeadmConfigPatches:
+          - |
+            kind: ClusterConfiguration
+            apiServer:
+              extraArgs:
+                "service-node-port-range": "30000-30005"
+          nodes:
+          - role: control-plane
+            extraPortMappings:
+            - containerPort: 80
+              hostPort: 80
+            - containerPort: 30000
+              hostPort: 30000
+            - containerPort: 30001
+              hostPort: 30001
+            - containerPort: 30002
+              hostPort: 30002
+            - containerPort: 30003
+              hostPort: 30003
+            - containerPort: 30004
+              hostPort: 30004
+            - containerPort: 30005
+              hostPort: 30005
+          EOF
+      - name: Set up Kind cluster
+        uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
+        with:
+          config: kind-config.yaml
+          cluster_name: kind
+        env:
+          KIND_EXPERIMENTAL_DOCKER_NETWORK: kind
+
+      - name: Patch local-path to mount shared filesystem path on the single kind node
+        run: |
+          # From https://github.com/kubernetes-sigs/kind/issues/1487#issuecomment-2211072952
+          kubectl -n local-path-storage patch configmap local-path-config -p '{"data": {"config.json": "{\n\"sharedFileSystemPath\": \"/var/local-path-provisioner\"\n}"}}'
+
+      - name: Export server URL
+        id: server
+        run: |
+          echo "server=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' kind-control-plane)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Romeo webserver
+        run: |
+          cd webserver
+          docker build \
+              -t localhost:5000/ctferio/romeo:${{ github.sha }} .
+          docker push localhost:5000/ctferio/romeo:${{ github.sha }}
+
+      - name: Install Pulumi
+        uses: pulumi/actions@df5a93ad715135263c732ba288301bd044c383c0 # v6.3.0
+      - name: Prepare environment
+        run: |
+          pulumi login --local
+          kubectl create ns romeo-in-ci
+
+      - name: Romeo install
+        id: install
+        uses: ctfer-io/romeo/install@1783ecd458c7591e300d34ac5540af6732f9606b
+        with:
+          kubeconfig: ~/.kube/config
+
+      - name: Romeo environment
+        id: env
+        uses: ctfer-io/romeo/environment@1783ecd458c7591e300d34ac5540af6732f9606b
+        with:
+          stack-name: env
+          registry: localhost:5000
+          kubeconfig: ${{ steps.install.outputs.kubeconfig }}
+          namespace: ${{ steps.install.outputs.namespace }}
+          storage-class-name: standard
+          tag: ${{ github.sha }}
+          pvc-access-mode: ReadWriteOnce
+
+      - name: Run Integration Tests
+        run: |
+          go test -v ./environment/deploy/integration/ -run=^Test_I_ -coverprofile=integration.cov -timeout=10m
+        env:
+          NAMESPACE: ${{ steps.install.outputs.namespace }}
+          TAG: ${{ github.sha }}
+          REGISTRY: localhost:5000
+          KUBECONFIG: ${{ steps.install.outputs.kubeconfig }}
+          CLAIM_NAME: ${{ steps.env.outputs.claim-name }}
+          SERVER: ${{ steps.server.outputs.server }}
+
+      - name: Download Romeo results
+        run: |
+          mkdir covs
+          curl "${{ steps.server.outputs.server }}:${{ steps.env.outputs.port }}/api/v1/coverout" |
+            jq -r '.merged' |
+            base64 -d > covs/covs.zip
+          (cd covs && unzip covs.zip && rm covs.zip)
+
+          go tool covdata textfmt -i=covs -o functional.cov
+          sed -i 's|^/go/src|github.com/ctfer-io/romeo/webserver|' functional.cov
+
+      - name: Merge coverage data
+        run: |
+          go install go.shabbyrobe.org/gocovmerge/cmd/gocovmerge@fa4f82cfbf4d57c646c1ed0f35002bf1b89fbf7a
+          gocovmerge integration.cov functional.cov > e2e.cov
+
+      - name: Upload e2e tests coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e.cov
+          path: e2e.cov
+
+  coverages:
+    name: Merge Coverage and Upload to Coveralls
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Go
+        uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
+        with:
+          go-version-file: "go.work"
+
+      - name: Download unit coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.2
+        with:
+          name: unit.cov
+
+      - name: Download e2e coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.2
+        with:
+          name: e2e.cov
+
+      - name: Merge coverage files
+        run: |
+          go install go.shabbyrobe.org/gocovmerge/cmd/gocovmerge@fa4f82cfbf4d57c646c1ed0f35002bf1b89fbf7a
+          gocovmerge unit.cov e2e.cov > overall.cov
 
       - name: Upload coverage to Coveralls
         uses: shogo82148/actions-goveralls@e6875f831db61e6abffbd8df91a2eb6cd24b46c9 # v1.9.1
         with:
-          path-to-profile: cov.out
+          path-to-profile: overall.cov
 
   go-lint:
     runs-on: ubuntu-latest
@@ -73,8 +239,8 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
-          go-version-file: 'go.work'
-      
+          go-version-file: "go.work"
+
       - name: Lint Webserver
         uses: golangci/golangci-lint-action@2226d7cb06a077cd73e56eedd38eecad18e5d837 # v6.5.0
         with:
