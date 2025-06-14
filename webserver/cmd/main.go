@@ -133,7 +133,9 @@ func download(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func() {
+		_ = res.Body.Close()
+	}()
 
 	// Decode them
 	resp := &apiv1.CoveroutResponse{}

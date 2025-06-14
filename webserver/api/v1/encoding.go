@@ -12,6 +12,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	maxSize = 1 << 30 // 1Gb
+)
+
 // Encode consumes a source  directory, zip its content and encoded
 // base 64.
 func Encode(src string) (string, error) {
@@ -31,7 +35,9 @@ func Encode(src string) (string, error) {
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func() {
+			_ = file.Close()
+		}()
 
 		// Remove coverdir from file in zip (avoid nested directories)
 		npath := strings.TrimPrefix(path, src+"/")
@@ -64,49 +70,15 @@ func Decode(buf string, dst string) error {
 		return errors.Wrap(err, "base64 decoding")
 	}
 
-	// Unzip content into it
+	// Safely decompress the archive (borrowed from Chall-Manager)
 	r, err := zip.NewReader(bytes.NewReader(raw), int64(len(raw)))
 	if err != nil {
 		return errors.Wrap(err, "base64 decoded invalid zip archive")
 	}
-	for _, f := range r.File {
-		filePath := filepath.Join(dst, f.Name)
-		if f.FileInfo().IsDir() {
-			continue
-		}
 
-		// If the file is in a sub-directory, create it
-		dir := filepath.Dir(filePath)
-		if _, err := os.Stat(dir); err != nil {
-			if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-				return err
-			}
-		}
-
-		// Create and write the file
-		if err := copyTo(filePath, f); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func copyTo(filePath string, f *zip.File) error {
-	outFile, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0777)
-	if err != nil {
-		return err
-	}
-	defer outFile.Close()
-
-	rc, err := f.Open()
-	if err != nil {
-		return err
-	}
-	defer rc.Close()
-
-	if _, err := io.Copy(outFile, rc); err != nil {
-		return err
-	}
-	return nil
+	dec := NewDecompressor(&Options{
+		MaxSize: maxSize,
+	})
+	_, err = dec.Unzip(r, dst)
+	return err
 }

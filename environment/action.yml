@@ -6,26 +6,29 @@ branding:
   color: 'blue'
 
 inputs:
+  stack-name:
+    description: 'The Pulumi stack name. Usefull when deploying multiple Romeo environments within the same context.'
+    default: 'env'
   kubeconfig:
     description: 'The kubeconfig to use for deploying a Romeo environment'
     required: true
   namespace:
-    description: 'The namespace in which to deploy, in case the kubeconfig has access to many'
-    required: false
+    description: 'The namespace in which to deploy, in case the kubeconfig has access to many. If not defined, will create one.'
   tag:
     description: 'The Romeo webserver docker tag to use'
-    required: true
     default: 'latest'
   storage-class-name:
     description: 'The StorageClassName for the PersistenVolumeClaim'
-    required: true
-    default: 'longhorn'
+    default: 'standard'
   storage-size:
     description: 'The storage size'
-    required: true
     default: '50M'
   claim-name:
     description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
+  registry:
+    description: 'An optional OCI registry to download romeo images from.'
+  pvc-access-mode:
+    description: 'The PVC access mode to use'
 
 outputs:
   port:

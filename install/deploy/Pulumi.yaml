@@ -1,10 +1,11 @@
-name: romeo-install
+name: install
 runtime: go
 description: The Kubernetes IaC to install Romeo.
 config:
   kubeconfig:
     type: string
-    description: 'The kubeconfig to use for installing Romeo and generating its own kubeconfig'
+    secret: true
+    description: 'The kubeconfig to use for deploying a Romeo environment (either the content or path).'
   namespace:
     type: string
     description: 'The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification. If not specified, will create one one the fly'

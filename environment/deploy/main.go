@@ -13,7 +13,7 @@ func main() {
 
 		// Build Kubernetes provider
 		pv, err := kubernetes.NewProvider(ctx, "provider", &kubernetes.ProviderArgs{
-			Kubeconfig: pulumi.String(cfg.Kubeconfig),
+			Kubeconfig: cfg.Kubeconfig,
 		})
 		if err != nil {
 			return err
@@ -21,18 +21,31 @@ func main() {
 
 		opts := []pulumi.ResourceOption{
 			pulumi.Provider(pv),
+			// Define timeouts to avoid waiting in CI.
+			// These should be large enough (observed ~1m on GitHub Action runners).
+			pulumi.Timeouts(&pulumi.CustomTimeouts{
+				Create: "2m",
+				Update: "2m", // should not occur
+				Delete: "2m", // should not occur
+			}),
 		}
 
 		// Deploy a Romeo instance
 		romeo, err := parts.NewRomeoEnvironment(ctx, "deploy", &parts.RomeoEnvironmentArgs{
 			Namespace:        pulumi.String(cfg.Namespace),
 			Tag:              pulumi.String(cfg.Tag),
-			StorageClassName: pulumi.StringPtr(cfg.StorageClassName),
-			StorageSize:      pulumi.StringPtr(cfg.StorageSize),
-			ClaimName:        pulumi.StringPtrFromPtr(cfg.ClaimName),
+			StorageClassName: pulumi.String(cfg.StorageClassName),
+			StorageSize:      pulumi.String(cfg.StorageSize),
+			ClaimName: func() (s pulumi.StringInput) {
+				if cfg.ClaimName != "" {
+					s = pulumi.String(cfg.ClaimName)
+				}
+				return
+			}(),
 			PVCAccessModes: pulumi.ToStringArray([]string{
 				cfg.PVCAccessMode,
 			}),
+			Registry: pulumi.String(cfg.Registry),
 		}, opts...)
 		if err != nil {
 			return err
@@ -48,32 +61,26 @@ func main() {
 }
 
 type Config struct {
-	Kubeconfig       string  `json:"kubeconfig"`
-	Namespace        string  `json:"namespace"`
-	Tag              string  `json:"tag"`
-	StorageClassName string  `json:"storage-class-name"`
-	StorageSize      string  `json:"storage-size"`
-	ClaimName        *string `json:"claim-name"`
-	PVCAccessMode    string  `json:"pvc-access-mode"`
+	Kubeconfig       pulumi.StringOutput
+	Namespace        string
+	Tag              string
+	StorageClassName string
+	StorageSize      string
+	ClaimName        string
+	PVCAccessMode    string
+	Registry         string
 }
 
 func loadConfig(ctx *pulumi.Context) *Config {
-	cfg := config.New(ctx, "")
+	cfg := config.New(ctx, "env")
 	return &Config{
-		Kubeconfig:       cfg.Require("kubeconfig"),
+		Kubeconfig:       cfg.GetSecret("kubeconfig"),
 		Namespace:        cfg.Get("namespace"),
 		Tag:              cfg.Get("tag"),
 		StorageClassName: cfg.Get("storage-class-name"),
 		StorageSize:      cfg.Get("storage-size"),
-		ClaimName:        getStrPtr(cfg, "claim-name"),
+		ClaimName:        cfg.Get("claim-name"),
 		PVCAccessMode:    cfg.Get("pvc-access-mode"),
+		Registry:         cfg.Get("registry"),
 	}
-}
-
-func getStrPtr(cfg *config.Config, key string) *string {
-	v := cfg.Get(key)
-	if v != "" {
-		return &v
-	}
-	return nil
 }

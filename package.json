@@ -37,6 +37,7 @@
         "upath": "^2.0.1"
     },
     "devDependencies": {
+        "@types/adm-zip": "^0.5.7",
         "@types/jest": "^30.0.0",
         "@typescript-eslint/eslint-plugin": "^8.34.0",
         "@typescript-eslint/parser": "^8.34.0",
