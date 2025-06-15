@@ -2,7 +2,7 @@ package parts
 
 import (
 	"fmt"
-	"strconv"
+	"strings"
 
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
@@ -30,7 +30,7 @@ type (
 		Namespace pulumi.StringOutput
 
 		// The port to reach the Romeo instance on.
-		Port pulumi.StringOutput
+		Port pulumi.IntOutput
 
 		// The claim name to mount in coverage-monitored Go pods for them to
 		// export their coverage data.
@@ -42,76 +42,119 @@ type (
 		Tag pulumi.StringInput
 		tag pulumi.StringOutput
 
-		ClaimName pulumi.StringPtrInput
+		ClaimName pulumi.StringInput
 
-		StorageClassName pulumi.StringPtrInput
+		StorageClassName pulumi.StringInput
 		storageClassName pulumi.StringOutput
 
-		StorageSize pulumi.StringPtrInput
+		StorageSize pulumi.StringInput
 		storageSize pulumi.StringOutput
+
+		Namespace pulumi.StringInput
 
 		PVCAccessModes pulumi.StringArrayInput
 		pvcAccessModes pulumi.StringArrayOutput
 
-		Namespace pulumi.StringInput
+		// Registry define from where to fetch the Chall-Manager Docker images.
+		// If set empty, defaults to Docker Hub.
+		// Authentication is not supported, please provide it as Kubernetes-level configuration.
+		Registry pulumi.StringInput
+		registry pulumi.StringOutput
 	}
 )
 
 const (
-	coverdir = "/tmp/coverdir"
+	coverdir                = "/etc/coverdir"
+	defaultTag              = "dev"
+	defaultStorageSize      = "50M"
+	defaultStorageClassName = "standard"
 )
 
 // NewRomeoEnvironment deploys a Romeo instance on Kubernetes.
 // The Romeo variable could be reused as a Pulumi ressource i.e. could
 // be a dependency, consumes inputs and produces outputs, etc.
-func NewRomeoEnvironment(ctx *pulumi.Context, name string, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (*RomeoEnvironment, error) {
-	romeo := &RomeoEnvironment{}
+func NewRomeoEnvironment(
+	ctx *pulumi.Context,
+	name string,
+	args *RomeoEnvironmentArgs,
+	opts ...pulumi.ResourceOption,
+) (*RomeoEnvironment, error) {
+	renv := &RomeoEnvironment{}
 
-	args = romeo.process(args)
-	if err := ctx.RegisterComponentResource("ctfer-io:romeo:environment", name, romeo, opts...); err != nil {
+	args = renv.defaults(args)
+	if err := ctx.RegisterComponentResource("ctfer-io:romeo:environment", name, renv, opts...); err != nil {
 		return nil, err
 	}
-	opts = append(opts, pulumi.Parent(romeo))
-	if err := romeo.provision(ctx, args, opts...); err != nil {
+	opts = append(opts, pulumi.Parent(renv))
+	if err := renv.provision(ctx, name, args, opts...); err != nil {
 		return nil, err
 	}
-	romeo.outputs()
+	if err := renv.outputs(ctx); err != nil {
+		return nil, err
+	}
 
-	return romeo, nil
+	return renv, nil
 }
 
-func (romeo *RomeoEnvironment) process(args *RomeoEnvironmentArgs) *RomeoEnvironmentArgs {
+func (renv *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnvironmentArgs {
 	if args == nil {
 		args = &RomeoEnvironmentArgs{}
 	}
 
 	// Default tag to dev
-	if args.Tag == nil || args.Tag == pulumi.String("") {
-		args.Tag = pulumi.String("dev").ToStringOutput()
+	args.tag = pulumi.String(defaultTag).ToStringOutput()
+	if args.Tag != nil {
+		args.tag = args.Tag.ToStringOutput().ApplyT(func(tag string) string {
+			if tag == "" {
+				return defaultTag
+			}
+			return tag
+		}).(pulumi.StringOutput)
 	}
-	args.tag = args.Tag.ToStringPtrOutput().Elem()
 
-	// Default storage class name to longhorn
-	if args.StorageClassName == nil || args.StorageClassName == pulumi.String("") {
-		args.StorageClassName = pulumi.StringPtr("longhorn")
+	// Don't default storage class name -> will select the default one
+	// on the K8s cluster.
+	args.storageClassName = pulumi.String(defaultStorageClassName).ToStringOutput()
+	if args.StorageClassName != nil {
+		args.storageClassName = args.StorageClassName.ToStringOutput().ApplyT(func(scm string) string {
+			if scm == "" {
+				return defaultStorageClassName
+			}
+			return scm
+		}).(pulumi.StringOutput)
 	}
-	args.storageClassName = args.StorageClassName.ToStringPtrOutput().Elem()
 
 	// Default storage size to 50M
-	if args.StorageSize == nil || args.StorageSize == pulumi.String("") {
-		args.StorageSize = pulumi.StringPtr("50M")
+	args.storageSize = pulumi.String(defaultStorageSize).ToStringOutput()
+	if args.StorageSize != nil {
+		args.storageSize = args.StorageSize.ToStringOutput().ApplyT(func(size string) string {
+			if size == "" {
+				return defaultStorageSize
+			}
+			return size
+		}).(pulumi.StringOutput)
 	}
-	args.storageSize = args.StorageSize.ToStringPtrOutput().Elem()
 
-	// Default PVC access modes to ReadWriteOnce
+	// Define private registry if any
+	args.registry = pulumi.String("").ToStringOutput()
+	if args.Registry != nil {
+		args.registry = args.Registry.ToStringOutput().ApplyT(func(in string) string {
+			if !strings.HasSuffix(in, "/") {
+				in += "/"
+			}
+			return in
+		}).(pulumi.StringOutput)
+	}
+
+	// Default PVC access modes
 	if args.PVCAccessModes == nil {
 		args.pvcAccessModes = pulumi.ToStringArray([]string{
-			"ReadWriteOnce",
+			"ReadWriteMany",
 		}).ToStringArrayOutput()
 	} else {
 		args.pvcAccessModes = args.PVCAccessModes.ToStringArrayOutput().ApplyT(func(slc []string) []string {
 			if len(slc) == 0 {
-				return []string{"ReadWriteOnce"}
+				return []string{"ReadWriteMany"}
 			}
 			return slc
 		}).(pulumi.StringArrayOutput)
@@ -120,9 +163,14 @@ func (romeo *RomeoEnvironment) process(args *RomeoEnvironmentArgs) *RomeoEnviron
 	return args
 }
 
-func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnvironmentArgs, opts ...pulumi.ResourceOption) (err error) {
+func (renv *RomeoEnvironment) provision(
+	ctx *pulumi.Context,
+	name string,
+	args *RomeoEnvironmentArgs,
+	opts ...pulumi.ResourceOption,
+) (err error) {
 	// Generate unique (random enough) PVC name
-	romeo.randName, err = random.NewRandomString(ctx, "romeo-name", &random.RandomStringArgs{
+	renv.randName, err = random.NewRandomString(ctx, "romeo-name-"+name, &random.RandomStringArgs{
 		Length:  pulumi.Int(8),
 		Special: pulumi.Bool(false),
 		Numeric: pulumi.Bool(false),
@@ -134,14 +182,15 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 
 	// Provision K8s resource
 	// => PVC
-	romeo.pvc, err = corev1.NewPersistentVolumeClaim(ctx, "romeo-pvc", &corev1.PersistentVolumeClaimArgs{
+	renv.pvc, err = corev1.NewPersistentVolumeClaim(ctx, "romeo-pvc-"+name, &corev1.PersistentVolumeClaimArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: args.Namespace,
 			Labels: pulumi.StringMap{
-				"app.kubernetes.io/component": pulumi.String("romeo"),
+				"app.kubernetes.io/component": pulumi.String(name),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+				"instance":                    renv.randName.Result,
 			},
-			Name: romeo.randName.Result,
+			Name: renv.randName.Result,
 		},
 		Spec: corev1.PersistentVolumeClaimSpecArgs{
 			StorageClassName: args.storageClassName,
@@ -174,14 +223,16 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 		corev1.VolumeArgs{
 			Name: pulumi.String("coverdir"),
 			PersistentVolumeClaim: corev1.PersistentVolumeClaimVolumeSourceArgs{
-				ClaimName: romeo.pvc.Metadata.Name().Elem(),
+				ClaimName: renv.pvc.Metadata.Name().Elem(),
 			},
 		},
 	}
 	if args.ClaimName != nil {
+		fmt.Println("Deploying with a claim name thus coverage exports")
+
 		// If coverage is turned on, export coverages in a random directory
 		// that is different from coverdir (ensure no collision).
-		romeo.coverRand, err = random.NewRandomString(ctx, "cover-rand", &random.RandomStringArgs{
+		renv.coverRand, err = random.NewRandomString(ctx, "cover-rand-"+name, &random.RandomStringArgs{
 			Length:  pulumi.Int(16),
 			Lower:   pulumi.BoolPtr(true),
 			Numeric: pulumi.BoolPtr(false),
@@ -191,7 +242,7 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 		if err != nil {
 			return
 		}
-		path := romeo.coverRand.Result.ApplyT(func(rand string) string {
+		path := renv.coverRand.Result.ApplyT(func(rand string) string {
 			return fmt.Sprintf("/tmp/%s", rand)
 		}).(pulumi.StringOutput)
 
@@ -202,23 +253,23 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 		volumeMounts = append(volumeMounts, corev1.VolumeMountArgs{
 			Name:      pulumi.String("coverages"),
 			MountPath: path,
-			ReadOnly:  pulumi.BoolPtr(true),
 		})
 		volumes = append(volumes, corev1.VolumeArgs{
 			Name: pulumi.String("coverages"),
 			PersistentVolumeClaim: corev1.PersistentVolumeClaimVolumeSourceArgs{
-				ClaimName: args.ClaimName.ToStringPtrOutput().Elem(),
+				ClaimName: args.ClaimName,
 			},
 		})
 	}
-	romeo.dep, err = appsv1.NewDeployment(ctx, "romeo-dep", &appsv1.DeploymentArgs{
+	renv.dep, err = appsv1.NewDeployment(ctx, "romeo-dep-"+name, &appsv1.DeploymentArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: args.Namespace,
 			Labels: pulumi.StringMap{
 				"app.kubernetes.io/name":      pulumi.String("romeo"),
 				"app.kubernetes.io/version":   args.tag,
-				"app.kubernetes.io/component": pulumi.String("romeo"),
+				"app.kubernetes.io/component": pulumi.String(name),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+				"instance":                    renv.randName.Result,
 			},
 		},
 		Spec: appsv1.DeploymentSpecArgs{
@@ -226,8 +277,9 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 				MatchLabels: pulumi.StringMap{
 					"app.kubernetes.io/name":      pulumi.String("romeo"),
 					"app.kubernetes.io/version":   args.tag,
-					"app.kubernetes.io/component": pulumi.String("romeo"),
+					"app.kubernetes.io/component": pulumi.String(name),
 					"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+					"instance":                    renv.randName.Result,
 				},
 			},
 			Replicas: pulumi.Int(1),
@@ -237,15 +289,16 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 					Labels: pulumi.StringMap{
 						"app.kubernetes.io/name":      pulumi.String("romeo"),
 						"app.kubernetes.io/version":   args.tag,
-						"app.kubernetes.io/component": pulumi.String("romeo"),
+						"app.kubernetes.io/component": pulumi.String(name),
 						"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+						"instance":                    renv.randName.Result,
 					},
 				},
 				Spec: corev1.PodSpecArgs{
 					Containers: corev1.ContainerArray{
 						corev1.ContainerArgs{
 							Name:            pulumi.String("romeo"),
-							Image:           pulumi.Sprintf("ctferio/romeo:%s", args.tag),
+							Image:           pulumi.Sprintf("%sctferio/romeo:%s", args.registry, args.tag),
 							ImagePullPolicy: pulumi.String("Always"),
 							Ports: corev1.ContainerPortArray{
 								corev1.ContainerPortArgs{
@@ -267,12 +320,13 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 	}
 
 	// => Service (expose Romeo)
-	romeo.svc, err = corev1.NewService(ctx, "romeo-svc", &corev1.ServiceArgs{
+	renv.svc, err = corev1.NewService(ctx, "romeo-svc-"+name, &corev1.ServiceArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: args.Namespace,
 			Labels: pulumi.StringMap{
-				"app.kubernetes.io/component": pulumi.String("romeo"),
+				"app.kubernetes.io/component": pulumi.String(name),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+				"instance":                    renv.randName.Result,
 			},
 		},
 		Spec: &corev1.ServiceSpecArgs{
@@ -280,8 +334,9 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 			Selector: pulumi.StringMap{
 				"app.kubernetes.io/name":      pulumi.String("romeo"),
 				"app.kubernetes.io/version":   args.tag,
-				"app.kubernetes.io/component": pulumi.String("romeo"),
+				"app.kubernetes.io/component": pulumi.String(name),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+				"instance":                    renv.randName.Result,
 			},
 			Ports: corev1.ServicePortArray{
 				corev1.ServicePortArgs{
@@ -299,13 +354,14 @@ func (romeo *RomeoEnvironment) provision(ctx *pulumi.Context, args *RomeoEnviron
 	return
 }
 
-func (romeo *RomeoEnvironment) outputs() {
-	romeo.Namespace = romeo.dep.Metadata.Namespace().Elem()
-	romeo.ClaimName = romeo.randName.Result
-	romeo.Port = romeo.svc.Spec.ApplyT(func(spec corev1.ServiceSpec) string {
-		if len(spec.Ports) == 0 || spec.Ports[0].NodePort == nil {
-			return ""
-		}
-		return strconv.Itoa(*spec.Ports[0].NodePort)
-	}).(pulumi.StringOutput)
+func (renv *RomeoEnvironment) outputs(ctx *pulumi.Context) error {
+	renv.Namespace = renv.dep.Metadata.Namespace().Elem()
+	renv.ClaimName = renv.pvc.Metadata.Name().Elem()
+	renv.Port = renv.svc.Spec.Ports().Index(pulumi.Int(0)).NodePort().Elem()
+
+	return ctx.RegisterResourceOutputs(renv, pulumi.Map{
+		"namespace":  renv.Namespace,
+		"claim-name": renv.ClaimName,
+		"port":       renv.Port,
+	})
 }

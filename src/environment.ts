@@ -1,31 +1,35 @@
 import * as core from '@actions/core'
 import * as stateHelper from './state-helper'
+import * as fs from './fs'
 import * as iac from './iac'
-
-const stackName = 'environment'
 
 async function run(): Promise<void> {
     try {
-        const stack = await iac.getStack(stackName)
+        var stackName = core.getInput('stack-name')
+        const stack = await iac.getStack(stackName, 'environment')
 
         await stack.setAllConfig({
-            'romeo-environment:kubeconfig': {
-                value: core.getInput('kubeconfig')
+            'env:kubeconfig': {
+                value: fs.resolveInput(core.getInput('kubeconfig')),
+                secret: true
             },
-            'romeo-environment:namespace': {
+            'env:namespace': {
                 value: core.getInput('namespace')
             },
-            'romeo-environment:tag': {
+            'env:tag': {
                 value: core.getInput('tag')
             },
-            'romeo-environment:storage-class-name': {
+            'env:storage-class-name': {
                 value: core.getInput('storage-class-name')
             },
-            'romeo-environment:storage-size': {
+            'env:storage-size': {
                 value: core.getInput('storage-size')
             },
-            'romeo-environment:claim-name': {
+            'env:claim-name': {
                 value: core.getInput('claim-name')
+            },
+            'env:registry': {
+                value: core.getInput('registry')
             }
         })
 
@@ -40,8 +44,10 @@ async function run(): Promise<void> {
 }
 
 async function cleanup(): Promise<void> {
+    var stackName = core.getInput('stack-name')
+
     try {
-        const stack = await iac.getStack(stackName)
+        const stack = await iac.getStack(stackName, 'environment')
         await stack.destroy({ onOutput: core.info, remove: true })
     } catch (error) {
         core.warning(`${(error as Error)?.message ?? error}`)

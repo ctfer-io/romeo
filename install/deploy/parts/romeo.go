@@ -21,11 +21,13 @@ type (
 	RomeoInstall struct {
 		pulumi.ResourceState
 
-		ns   *Namespace
-		role *rbacv1.Role
-		sa   *corev1.ServiceAccount
-		rb   *rbacv1.RoleBinding
-		sec  *corev1.Secret
+		ns  *Namespace
+		cr  *rbacv1.ClusterRole
+		r   *rbacv1.Role
+		sa  *corev1.ServiceAccount
+		crb *rbacv1.ClusterRoleBinding
+		rb  *rbacv1.RoleBinding
+		sec *corev1.Secret
 
 		// Kubeconfig to store in the workflow secrets. Pass this to the Romeo
 		// steps for deploying ephemeral environments.
@@ -42,20 +44,25 @@ type (
 		// Namespace in which to sets up the Romeo environments.
 		Namespace pulumi.StringPtrInput
 
-		// ApiServer URL to reach the Kubernetes cluster at.
+		// APIServer URL to reach the Kubernetes cluster at.
 		// Will be used to create the kubeconfig (output).
-		ApiServer pulumi.StringInput
+		APIServer pulumi.StringInput
 	}
 )
 
 // NewRomeoInstall deploys resources on on Kubernetes for Romeo environments.
 // The RomeoInstall variable could be reused as a Pulumi ressource i.e. could
 // be a dependency, consumes inputs and produces outputs, etc.
-func NewRomeoInstall(ctx *pulumi.Context, name string, args *RomeoInstallArgs, opts ...pulumi.ResourceOption) (*RomeoInstall, error) {
+func NewRomeoInstall(
+	ctx *pulumi.Context,
+	name string,
+	args *RomeoInstallArgs,
+	opts ...pulumi.ResourceOption,
+) (*RomeoInstall, error) {
 	if args == nil {
 		return nil, errors.New("romeo install does not support default arguments")
 	}
-	if args.ApiServer == pulumi.String("") {
+	if args.APIServer == pulumi.String("") {
 		return nil, errors.New("api-server is required")
 	}
 
@@ -72,7 +79,11 @@ func NewRomeoInstall(ctx *pulumi.Context, name string, args *RomeoInstallArgs, o
 	return rist, nil
 }
 
-func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs, opts ...pulumi.ResourceOption) (err error) {
+func (rist *RomeoInstall) provision(
+	ctx *pulumi.Context,
+	args *RomeoInstallArgs,
+	opts ...pulumi.ResourceOption,
+) (err error) {
 	// Deploy Kubernetes resources
 
 	// => Namespace (deploy one if none specified)
@@ -83,8 +94,8 @@ func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 		return
 	}
 
-	// => Role
-	rist.role, err = rbacv1.NewRole(ctx, "romeo-role", &rbacv1.RoleArgs{
+	// => ClusterRole
+	rist.cr, err = rbacv1.NewClusterRole(ctx, "romeo-crole", &rbacv1.ClusterRoleArgs{
 		Metadata: metav1.ObjectMetaArgs{
 			Namespace: rist.ns.Name,
 			Labels: pulumi.StringMap{
@@ -92,7 +103,35 @@ func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
 			},
 		},
-		// TODO  +  kubernetes:core/v1:PersistentVolumeClaim romeo-pvc creating (0s) warning: getting storagclass "longhorn": storageclasses.storage.k8s.io "longhorn" is forbidden: User "system:serviceaccount:romeo:romeo-sa-fa059d0f" cannot get resource "storageclasses" in API group "storage.k8s.io" at the cluster scope
+		Rules: rbacv1.PolicyRuleArray{
+			rbacv1.PolicyRuleArgs{
+				ApiGroups: pulumi.ToStringArray([]string{
+					"storage.k8s.io",
+				}),
+				Verbs: pulumi.ToStringArray([]string{
+					"get",
+					"list",
+					"watch",
+				}),
+				Resources: pulumi.ToStringArray([]string{
+					"storageclasses",
+				}),
+			},
+		},
+	}, opts...)
+	if err != nil {
+		return
+	}
+
+	// => Role
+	rist.r, err = rbacv1.NewRole(ctx, "romeo-role", &rbacv1.RoleArgs{
+		Metadata: metav1.ObjectMetaArgs{
+			Namespace: rist.ns.Name,
+			Labels: pulumi.StringMap{
+				"app.kubernetes.io/component": pulumi.String("install"),
+				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+			},
+		},
 		Rules: rbacv1.PolicyRuleArray{
 			rbacv1.PolicyRuleArgs{
 				ApiGroups: pulumi.ToStringArray([]string{
@@ -131,17 +170,6 @@ func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 					"replicasets",
 				}),
 			},
-			rbacv1.PolicyRuleArgs{
-				ApiGroups: pulumi.ToStringArray([]string{
-					"storage.k8s.io",
-				}),
-				Verbs: pulumi.ToStringArray([]string{
-					"get",
-				}),
-				Resources: pulumi.ToStringArray([]string{
-					"storageclasses",
-				}),
-			},
 		},
 	}, opts...)
 	if err != nil {
@@ -162,6 +190,32 @@ func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 		return
 	}
 
+	// => ClusterRoleBinding
+	rist.crb, err = rbacv1.NewClusterRoleBinding(ctx, "romeo-crole-binding", &rbacv1.ClusterRoleBindingArgs{
+		Metadata: metav1.ObjectMetaArgs{
+			Namespace: rist.ns.Name,
+			Labels: pulumi.StringMap{
+				"app.kubernetes.io/component": pulumi.String("romeo"),
+				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+			},
+		},
+		RoleRef: rbacv1.RoleRefArgs{
+			ApiGroup: pulumi.String("rbac.authorization.k8s.io"),
+			Kind:     pulumi.String("ClusterRole"),
+			Name:     rist.cr.Metadata.Name().Elem(),
+		},
+		Subjects: rbacv1.SubjectArray{
+			rbacv1.SubjectArgs{
+				Kind:      pulumi.String("ServiceAccount"),
+				Name:      rist.sa.Metadata.Name().Elem(),
+				Namespace: rist.ns.Name,
+			},
+		},
+	}, opts...)
+	if err != nil {
+		return
+	}
+
 	// => RoleBinding
 	rist.rb, err = rbacv1.NewRoleBinding(ctx, "romeo-role-binding", &rbacv1.RoleBindingArgs{
 		Metadata: metav1.ObjectMetaArgs{
@@ -174,7 +228,7 @@ func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 		RoleRef: rbacv1.RoleRefArgs{
 			ApiGroup: pulumi.String("rbac.authorization.k8s.io"),
 			Kind:     pulumi.String("Role"),
-			Name:     rist.role.Metadata.Name().Elem(),
+			Name:     rist.r.Metadata.Name().Elem(),
 		},
 		Subjects: rbacv1.SubjectArray{
 			rbacv1.SubjectArgs{
@@ -207,7 +261,7 @@ func (rist *RomeoInstall) provision(ctx *pulumi.Context, args *RomeoInstallArgs,
 
 func (rist *RomeoInstall) outputs(args *RomeoInstallArgs) {
 	rist.Namespace = rist.ns.Name
-	rist.Kubeconfig = pulumi.All(rist.sec.Data, args.ApiServer, rist.ns.Name).ApplyT(func(all []any) string {
+	rist.Kubeconfig = pulumi.All(rist.sec.Data, args.APIServer, rist.ns.Name).ApplyT(func(all []any) string {
 		data := all[0].(map[string]string)
 		apiServer := all[1].(string)
 		ns := all[2].(string)
@@ -216,7 +270,7 @@ func (rist *RomeoInstall) outputs(args *RomeoInstallArgs) {
 
 		values := &KubeconfigTemplateValues{
 			CaCrt:     data["ca.crt"],
-			ApiServer: apiServer,
+			APIServer: apiServer,
 			Namespace: ns,
 			Token:     string(token),
 		}
@@ -245,7 +299,7 @@ func init() {
 // KubeconfigTemplateValues contains the inputs to build a
 type KubeconfigTemplateValues struct {
 	CaCrt     string
-	ApiServer string
+	APIServer string
 	Namespace string
 	Token     string
 }
