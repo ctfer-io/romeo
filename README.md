@@ -22,6 +22,31 @@ This work is based upon [Than McIntosh blog post "Code coverage for Go integrati
 
 ## How it works
 
+### Context
+
+Beyond testing for Quality Assurance, we also want to monitor what portion of the code is actually tested. This helps Software Development and Quality Assurance engineers to pilot where to focus the efforts. For instance, it can help detect what conditions where not covered at all during the whole process (e.g. an API method of a Service, or a common error).
+
+It is especially true in the context of Micro Services Architectures, which is CTFer.io's reason for creating Romeo.
+
+In Go, measuring code coverage can be performed during tests with the `-coverprofile` flag. It is often used for unit tests, and sometimes for functional and integrations tests. The common approaches can be summed up in the following workflow (values are fictive).
+
+<div align="center">
+  <img src="./res/example-workflow.excalidraw.png" width="800px">
+</div>
+
+### What Romeo does
+
+The common approaches presented above throws away a lot of data : what lines were executed during my program lifecycle ?
+
+To avoid loosing that much value, Romeo watches over the Go binary coverages. It is simply integrated within your existing worklow.
+The modified version of the previous worklow follows (values are fictive).
+
+<div align="center">
+  <img src="./res/example-workflow-with-romeo.excalidraw.png" width="800px">
+</div>
+
+### Integration
+
 Romeo creates an **ephemeral environment** on a Kubernetes cluster and provides a `PersistentVolumeClaim` for Go binaries to write coverages into, automatically once compiled with the `-cover` flag and run with the `GOCOVERDIR` environment variable.
 Then the program is tested (functional, integration, smoke, e2e, load/stress, ...), and results are exported as always.
 The coverages are downloaded and written on filesystem, and can then be exported to the provider of your choice: Coveralls.io, SonarQube, ...
@@ -33,10 +58,14 @@ The integration is typically based on 5 steps:
 4. [Download the coverages](./download/)
 5. Manipulate them, merge with others, export wherever
 
+> [!TIP]
+> [Romeo uses itself to measure its code coverage](.github/workflows/e2e.yaml) through unit and integration tests.
+> If you have trouble understanding how it could integrate within your workflow, it might be a good start !
+
 ## Usage
 
 The recommended process is to run both [install](./install) and [environment](./environment) in a workflow.
-This provides good isolation thus ensure actual coverages.
+This provides good isolation with adjacent systems, and ensure actual coverages (no parallel runs pollutes data).
 
 It is acceptable, mostly for performance reasons, to pre-[install](install) Romeo thus only running an [environment](environment) per workflow.
 Refer to their own documentation to implement this in your process.
