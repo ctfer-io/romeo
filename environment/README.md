@@ -34,12 +34,12 @@ In the following steps examples, we consider a Romeo install.
           namespace: ${{ steps.install.outputs.namespace }}
 ```
 
-You can then mount the PVC claim name (see [outputs](#outputs)) with the technology of your choice : Helm, Terraform, 
+You can then mount the PVC claim name (see [outputs](#outputs)) with the technology of your choice: Helm, Terraform, 
 
 > [!IMPORTANT]
 > Your program **must** mount the PVC, but also **run and stop**.
 >
-> If your program is not improperly stopped, or not stopped at all, the coverages are not completly written on disk leading to **incomplete coverages**.
+> If your program is improperly stopped, or not stopped at all, the coverages are not completly written on disk leading to **incomplete coverages**.
 
 Once your tests ran, you can [download the coverages](../download).
 

@@ -43,7 +43,7 @@ In Go, measuring code coverage can be performed during tests with the `-coverpro
 
 ### What Romeo does
 
-The common approaches presented above throws away a lot of data : what lines were executed during my program lifecycle ?
+The common approaches presented above throws away a lot of data: what lines were executed during my program lifecycle ?
 
 To avoid loosing that much value, Romeo watches over the Go binary coverages. It is simply integrated within your existing worklow.
 The modified version of the previous worklow follows (values are fictive).

@@ -28,7 +28,7 @@ It will create the RBAC resources required by [Romeo environment](../environment
           kubeconfig: ${{ secrets.KUBECONFIG }}
 ```
 
-At the end of the Action, it will delete the deployed resources : it is an ephemeral environment, even within a development or production cluster !
+At the end of the Action, it will delete the deployed resources: it is an ephemeral environment, even within a development or production cluster !
 
 #### Inputs
 
