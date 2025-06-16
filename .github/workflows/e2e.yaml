@@ -85,13 +85,13 @@ jobs:
 
       - name: Romeo install
         id: install
-        uses: ctfer-io/romeo/install@c942b91c8257d35b13f63bc48fe7a869afefd7da
+        uses: ctfer-io/romeo/install@6e8e480877690f74242a354ba0ef7404cacbbd6c
         with:
           kubeconfig: ~/.kube/config
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@c942b91c8257d35b13f63bc48fe7a869afefd7da
+        uses: ctfer-io/romeo/environment@6e8e480877690f74242a354ba0ef7404cacbbd6c
         with:
           registry: localhost:5000
           kubeconfig: ${{ steps.install.outputs.kubeconfig }}
@@ -113,19 +113,18 @@ jobs:
 
       - name: Download Romeo results
         id: download
-        uses: ctfer-io/romeo/download@c942b91c8257d35b13f63bc48fe7a869afefd7da
+        uses: ctfer-io/romeo/download@6e8e480877690f74242a354ba0ef7404cacbbd6c
         with:
           server: http://${{ steps.server.outputs.server }}:${{ steps.env.outputs.port }}
 
       - name: Merge coverages
         run: |
-          go tool covdata textfmt -i=${{ steps.download.outputs.directory }} -o functional.cov
-          sed -i 's|^/go/src|github.com/ctfer-io/romeo/webserver|' functional.cov
+          sed -i 's|^/go/src|github.com/ctfer-io/romeo/webserver|' ${{ steps.download.outputs.path }}
 
       - name: Merge coverage data
         run: |
           go install go.shabbyrobe.org/gocovmerge/cmd/gocovmerge@fa4f82cfbf4d57c646c1ed0f35002bf1b89fbf7a
-          gocovmerge integration.cov functional.cov > e2e.cov
+          gocovmerge integration.cov ${{ steps.download.outputs.path }} > e2e.cov
 
       - name: Upload e2e tests coverage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
