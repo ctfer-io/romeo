@@ -20,6 +20,13 @@ The design is generic so **whatever your software testing technology stack is**,
 
 This work is based upon [Than McIntosh blog post "Code coverage for Go integration tests"](https://go.dev/blog/integration-test-coverage).
 
+- [How it works](#how-it-works)
+  - [Context](#context)
+  - [What Romeo does](#what-romeo-does)
+  - [Integration](#integration)
+- [Usage](#usage)
+- [Security](#security)
+
 ## How it works
 
 ### Context
