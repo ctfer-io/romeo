@@ -117,12 +117,12 @@ jobs:
         with:
           server: http://${{ steps.server.outputs.server }}:${{ steps.env.outputs.port }}
 
-      - name: Merge coverages
-        run: |
-          sed -i 's|^/go/src|github.com/ctfer-io/romeo/webserver|' ${{ steps.download.outputs.path }}
-
       - name: Merge coverage data
         run: |
+          # Point back to the actual Go module tested.
+          # It cannot be inferred, leading to this highly precise step.
+          sed -i 's|^/go/src|github.com/ctfer-io/romeo/webserver|' ${{ steps.download.outputs.path }}
+
           go install go.shabbyrobe.org/gocovmerge/cmd/gocovmerge@fa4f82cfbf4d57c646c1ed0f35002bf1b89fbf7a
           gocovmerge integration.cov ${{ steps.download.outputs.path }} > e2e.cov
 
