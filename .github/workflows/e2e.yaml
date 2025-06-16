@@ -85,13 +85,13 @@ jobs:
 
       - name: Romeo install
         id: install
-        uses: ctfer-io/romeo/install@e3085a5a3cb35d6f563e44e71876d62166f8b82e
+        uses: ctfer-io/romeo/install@c942b91c8257d35b13f63bc48fe7a869afefd7da
         with:
           kubeconfig: ~/.kube/config
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@e3085a5a3cb35d6f563e44e71876d62166f8b82e
+        uses: ctfer-io/romeo/environment@c942b91c8257d35b13f63bc48fe7a869afefd7da
         with:
           registry: localhost:5000
           kubeconfig: ${{ steps.install.outputs.kubeconfig }}
@@ -112,14 +112,14 @@ jobs:
           SERVER: ${{ steps.server.outputs.server }}
 
       - name: Download Romeo results
-        run: |
-          mkdir covs
-          curl "${{ steps.server.outputs.server }}:${{ steps.env.outputs.port }}/api/v1/coverout" |
-            jq -r '.merged' |
-            base64 -d > covs/covs.zip
-          (cd covs && unzip covs.zip && rm covs.zip)
+        id: download
+        uses: ctfer-io/romeo/download@c942b91c8257d35b13f63bc48fe7a869afefd7da
+        with:
+          server: http://${{ steps.server.outputs.server }}:${{ steps.env.outputs.port }}
 
-          go tool covdata textfmt -i=covs -o functional.cov
+      - name: Merge coverages
+        run: |
+          go tool covdata textfmt -i=${{ steps.download.outputs.directory }} -o functional.cov
           sed -i 's|^/go/src|github.com/ctfer-io/romeo/webserver|' functional.cov
 
       - name: Merge coverage data

@@ -19,10 +19,5 @@ outputs:
     description: 'Directory the coverages data were exported to'
 
 runs:
-  using: docker
-  image: 'docker://ctferio/romeo:dev'
-  args:
-    - download
-  env:
-    SERVER: ${{ inputs.server }}
-    DIRECTORY: ${{ inputs.directory }}
+  using: node20
+  main: ../dist/download.js
