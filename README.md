@@ -18,7 +18,7 @@ For instance it can be used for **in-production code coverage** measurement, whi
 
 The design is generic so **whatever your software testing technology stack is**, it might fit your needs: Helm, Terraform, Pulumi, RobotFramework, in-house solutions, ... Making adoption of Romeo **low cost**.
 
-This work is based upon [Than McIntosh blog post "Code coverage for Go integration tests"](https://go.dev/blog/integration-test-coverage).
+This work is based upon [Than McIntosh blog post "Code coverage for Go integration tests"](https://go.dev/blog/integration-test-coverage) and [doc page](https://go.dev/doc/build-cover).
 
 - [How it works](#how-it-works)
   - [Context](#context)

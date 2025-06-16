@@ -1,7 +1,7 @@
 # Romeo webserver
 
 The Romeo webserver is a simplistic application that reuses the Go tooling for coverages introduced in 1.20.
-It industrialize the [code coverage for Go integration tests](https://go.dev/blog/integration-test-coverage) blog post.
+It industrialize the [code coverage for Go integration tests](https://go.dev/blog/integration-test-coverage) blog post and [doc page](https://go.dev/doc/build-cover).
 
 The idea is very simple: on the `/api/v1/coverout` endpoint, it triggers the Go coverage merge command, then zip this, encode base64 to ensure it could be sent on HTTP without losses.
 By running it as close to the integration binaries that are tested as possible, you expose those coverages to distant sources without relying on networked files, etc.
