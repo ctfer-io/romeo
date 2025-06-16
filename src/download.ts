@@ -2,7 +2,12 @@ import * as core from '@actions/core'
 import fetch from 'node-fetch'
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import * as os from 'os'
 import AdmZip from 'adm-zip'
+import { execFile } from 'child_process'
+import { promisify } from 'util'
+
+const execFileAsync = promisify(execFile)
 
 type MergedResponse = {
     merged: string
@@ -15,11 +20,30 @@ function isPathInside(parent: string, child: string): boolean {
     )
 }
 
+async function unzipToDir(zipBuffer: Buffer, targetDir: string) {
+    const zip = new AdmZip(zipBuffer)
+    const entries = zip.getEntries()
+
+    for (const entry of entries) {
+        const entryPath = path.join(targetDir, entry.entryName)
+
+        if (!isPathInside(targetDir, entryPath)) {
+            throw new Error(`Zip traversal attack detected: ${entry.entryName}`)
+        }
+
+        if (entry.isDirectory) {
+            await fs.mkdir(entryPath, { recursive: true })
+        } else {
+            await fs.mkdir(path.dirname(entryPath), { recursive: true })
+            await fs.writeFile(entryPath, entry.getData())
+        }
+    }
+}
+
 async function run(): Promise<void> {
     try {
         const url = core.getInput('server', { required: true })
-        const directory = core.getInput('directory', { required: true })
-        await fs.mkdir(directory, { recursive: true })
+        const strategy = core.getInput('strategy')
 
         // Fetch JSON
         const response = await fetch(`${url}/api/v1/coverout`)
@@ -34,32 +58,32 @@ async function run(): Promise<void> {
             throw new Error('Invalid or missing "merged" attribute in JSON.')
         }
 
-        // Decode Base64
         const zipBuffer = Buffer.from(base64Zip, 'base64')
 
-        // Unzip securely
-        const zip = new AdmZip(zipBuffer)
-        const entries = zip.getEntries()
-
-        for (const entry of entries) {
-            const entryPath = path.join(directory, entry.entryName)
-
-            if (!isPathInside(directory, entryPath)) {
-                throw new Error(
-                    `Zip traversal attack detected: ${entry.entryName}`
-                )
-            }
-
-            if (entry.isDirectory) {
-                await fs.mkdir(entryPath, { recursive: true })
-            } else {
-                await fs.mkdir(path.dirname(entryPath), { recursive: true })
-                await fs.writeFile(entryPath, entry.getData())
-            }
+        if (strategy === 'raw') {
+            const coverout = path.resolve('coverout')
+            await fs.mkdir(coverout, { recursive: true })
+            await unzipToDir(zipBuffer, coverout)
+            core.setOutput('path', coverout)
+        } else if (strategy === 'coverfile') {
+            const coverfile = core.getInput('coverfile', { required: true })
+            const tmpDir = await fs.mkdtemp(
+                path.join(os.tmpdir(), 'cov-unzip-')
+            )
+            await unzipToDir(zipBuffer, tmpDir)
+            await execFileAsync('go', [
+                'tool',
+                'covdata',
+                'textfmt',
+                `-i=${tmpDir}`,
+                `-o=${coverfile}`
+            ])
+            core.setOutput('path', coverfile)
+        } else {
+            core.setFailed(
+                `Invalid mode "${strategy}". Must be either "coverfile" or "raw".`
+            )
         }
-
-        // Set output
-        core.setOutput('directory', directory)
     } catch (error: any) {
         core.setFailed(error.message)
     }
