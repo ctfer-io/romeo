@@ -1,5 +1,8 @@
 version: 2
 
+builds:
+- skip: true # https://goreleaser.com/cookbooks/release-a-library/?h=librar#release-a-library
+
 changelog:
   sort: asc
   filters:
