@@ -1,24 +1,5 @@
 version: 2
 
-before:
-  hooks:
-    - go mod tidy
-
-gomod:
-  proxy: true
-
-builds:
-  - main: ./cmd
-    binary: romeo
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-    goarch:
-      - amd64
-    flags:
-      - -cover
-
 changelog:
   sort: asc
   filters:
