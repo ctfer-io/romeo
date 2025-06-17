@@ -139,7 +139,7 @@ func (renv *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnviron
 	args.registry = pulumi.String("").ToStringOutput()
 	if args.Registry != nil {
 		args.registry = args.Registry.ToStringOutput().ApplyT(func(in string) string {
-			if !strings.HasSuffix(in, "/") {
+			if in != "" && !strings.HasSuffix(in, "/") {
 				in += "/"
 			}
 			return in
@@ -297,9 +297,8 @@ func (renv *RomeoEnvironment) provision(
 				Spec: corev1.PodSpecArgs{
 					Containers: corev1.ContainerArray{
 						corev1.ContainerArgs{
-							Name:            pulumi.String("romeo"),
-							Image:           pulumi.Sprintf("%sctferio/romeo:%s", args.registry, args.tag),
-							ImagePullPolicy: pulumi.String("Always"),
+							Name:  pulumi.String("romeo"),
+							Image: pulumi.Sprintf("%sctferio/romeo:%s", args.registry, args.tag),
 							Ports: corev1.ContainerPortArray{
 								corev1.ContainerPortArgs{
 									ContainerPort: pulumi.Int(8080),
