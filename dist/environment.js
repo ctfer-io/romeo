@@ -35,29 +35,34 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const stateHelper = __importStar(require("./state-helper"));
+const fs = __importStar(require("./fs"));
 const iac = __importStar(require("./iac"));
-const stackName = 'environment';
 async function run() {
     try {
-        const stack = await iac.getStack(stackName);
+        var stackName = core.getInput('stack-name');
+        const stack = await iac.getStack(stackName, 'environment');
         await stack.setAllConfig({
-            'romeo-environment:kubeconfig': {
-                value: core.getInput('kubeconfig')
+            'env:kubeconfig': {
+                value: fs.resolveInput(core.getInput('kubeconfig')),
+                secret: true
             },
-            'romeo-environment:namespace': {
+            'env:namespace': {
                 value: core.getInput('namespace')
             },
-            'romeo-environment:tag': {
+            'env:tag': {
                 value: core.getInput('tag')
             },
-            'romeo-environment:storage-class-name': {
+            'env:storage-class-name': {
                 value: core.getInput('storage-class-name')
             },
-            'romeo-environment:storage-size': {
+            'env:storage-size': {
                 value: core.getInput('storage-size')
             },
-            'romeo-environment:claim-name': {
+            'env:claim-name': {
                 value: core.getInput('claim-name')
+            },
+            'env:registry': {
+                value: core.getInput('registry')
             }
         });
         const upRes = await stack.up({ onOutput: core.info });
@@ -70,8 +75,9 @@ async function run() {
     }
 }
 async function cleanup() {
+    var stackName = core.getInput('stack-name');
     try {
-        const stack = await iac.getStack(stackName);
+        const stack = await iac.getStack(stackName, 'environment');
         await stack.destroy({ onOutput: core.info, remove: true });
     }
     catch (error) {

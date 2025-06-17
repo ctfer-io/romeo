@@ -1,28 +1,29 @@
 name: 'Romeo Download'
 author: 'ctfer-io'
-description: 'Download the Romeo data from an environment, after running your tests'
+description: 'Download the Romeo coverages from an environment, after running your tests'
 branding:
   icon: 'bar-chart-2'
   color: 'green'
 
 inputs:
   server:
-    description: 'Server URL to reach out the Romeo environment'
+    description: 'Server URL to reach out the Romeo environment.'
     required: true
-  directory:
-    description: 'Directory to export the coverages data (defaults to "coverout")'
-    required: true
-    default: 'coverout'
+  strategy:
+    description: |
+      The strategy to download and write coverages.
+      Enum contains:
+      - "raw" for coverfile and covdata files in a directory
+      - "coverfile" (default) for a single coverage file
+    default: coverfile
+  coverfile:
+    description: 'The file to output coverages into.'
+    default: out.cov
 
 outputs:
-  directory:
-    description: 'Directory the coverages data were exported to'
+  path:
+    description: 'The file containing the coverages.'
 
 runs:
-  using: docker
-  image: 'docker://ctferio/romeo:dev'
-  args:
-    - download
-  env:
-    SERVER: ${{ inputs.server }}
-    DIRECTORY: ${{ inputs.directory }}
+  using: node20
+  main: ../dist/download.js

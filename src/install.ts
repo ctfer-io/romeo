@@ -1,21 +1,23 @@
 import * as core from '@actions/core'
 import * as stateHelper from './state-helper'
+import * as fs from './fs'
 import * as iac from './iac'
 
-const stackName = 'install'
+const dst = 'install'
 
 async function run(): Promise<void> {
     try {
-        const stack = await iac.getStack(stackName)
+        const stack = await iac.getStack(dst, dst)
 
         await stack.setAllConfig({
-            'romeo-install:kubeconfig': {
-                value: core.getInput('kubeconfig')
+            'install:kubeconfig': {
+                value: fs.resolveInput(core.getInput('kubeconfig')),
+                secret: true
             },
-            'romeo-install:namespace': {
+            'install:namespace': {
                 value: core.getInput('namespace')
             },
-            'romeo-install:api-server': {
+            'install:api-server': {
                 value: core.getInput('api-server')
             }
         })
@@ -31,7 +33,7 @@ async function run(): Promise<void> {
 
 async function cleanup(): Promise<void> {
     try {
-        const stack = await iac.getStack(stackName)
+        const stack = await iac.getStack(dst, dst)
         await stack.destroy({ onOutput: core.info, remove: true })
     } catch (error) {
         core.warning(`${(error as Error)?.message ?? error}`)

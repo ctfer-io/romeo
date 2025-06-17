@@ -35,19 +35,21 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(require("@actions/core"));
 const stateHelper = __importStar(require("./state-helper"));
+const fs = __importStar(require("./fs"));
 const iac = __importStar(require("./iac"));
-const stackName = 'install';
+const dst = 'install';
 async function run() {
     try {
-        const stack = await iac.getStack(stackName);
+        const stack = await iac.getStack(dst, dst);
         await stack.setAllConfig({
-            'romeo-install:kubeconfig': {
-                value: core.getInput('kubeconfig')
+            'install:kubeconfig': {
+                value: fs.resolveInput(core.getInput('kubeconfig')),
+                secret: true
             },
-            'romeo-install:namespace': {
+            'install:namespace': {
                 value: core.getInput('namespace')
             },
-            'romeo-install:api-server': {
+            'install:api-server': {
                 value: core.getInput('api-server')
             }
         });
@@ -61,7 +63,7 @@ async function run() {
 }
 async function cleanup() {
     try {
-        const stack = await iac.getStack(stackName);
+        const stack = await iac.getStack(dst, dst);
         await stack.destroy({ onOutput: core.info, remove: true });
     }
     catch (error) {

@@ -6,34 +6,37 @@ branding:
   color: 'blue'
 
 inputs:
+  stack-name:
+    description: 'The Pulumi stack name. Usefull when deploying multiple Romeo environments within the same context.'
+    default: 'env'
   kubeconfig:
     description: 'The kubeconfig to use for deploying a Romeo environment'
     required: true
   namespace:
-    description: 'The namespace in which to deploy, in case the kubeconfig has access to many'
-    required: false
+    description: 'The namespace in which to deploy, in case the kubeconfig has access to many. If not defined, will create one.'
   tag:
     description: 'The Romeo webserver docker tag to use'
-    required: true
     default: 'latest'
   storage-class-name:
-    description: 'The StorageClassName for the PersistenVolumeClaim'
-    required: true
-    default: 'longhorn'
+    description: 'The StorageClass name for the PersistenVolumeClaim.'
+    default: 'standard'
   storage-size:
-    description: 'The storage size'
-    required: true
+    description: 'The storage size.'
     default: '50M'
   claim-name:
-    description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name'
+    description: 'If specified, turns on Romeo''s coverage export in the given PersistenVolumeClaim name. This should only be used by CTFer.io to test Romeo itself.'
+  registry:
+    description: 'An optional OCI registry to download romeo images from.'
+  pvc-access-mode:
+    description: 'The PVC access mode to use.'
 
 outputs:
   port:
-    description: 'The port to reach out the Romeo webserver'
+    description: 'The port to reach out the Romeo webserver API, as exposed by the Kubernetes cluster.'
   claim-name:
-    description: 'The PersistentVolumeClaim name for binaries to mount in order to write coverage data'
+    description: 'The PersistentVolumeClaim name for binaries to mount in order to write coverage data.'
   namespace:
-    description: 'The namespace in which Romeo has been deployed. Reuse it to target the PersistentVolumeClaim corresponding to the claim-name'
+    description: 'The namespace in which Romeo has been deployed. Reuse it to target the PersistentVolumeClaim corresponding to the claim-name.'
 
 runs:
   using: node20
