@@ -8,7 +8,7 @@ gomod:
   proxy: true
 
 builds:
-  - main: ./webserver/cmd
+  - main: ./cmd
     binary: romeo
     env:
       - CGO_ENABLED=0
