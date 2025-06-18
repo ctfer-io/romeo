@@ -448,9 +448,10 @@ func (renv *RomeoEnvironment) provision(
 }
 
 func (renv *RomeoEnvironment) outputs(ctx *pulumi.Context, args *RomeoEnvironmentArgs) error {
-	renv.Namespace = args.Namespace.ToStringOutput()
 	if args.createNamespace {
 		renv.Namespace = renv.ns.Name
+	} else {
+		renv.Namespace = args.Namespace.ToStringOutput()
 	}
 
 	renv.ClaimName = renv.pvc.Metadata.Name().Elem()

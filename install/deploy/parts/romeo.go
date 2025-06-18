@@ -307,9 +307,10 @@ func (rist *RomeoInstall) provision(
 }
 
 func (rist *RomeoInstall) outputs(ctx *pulumi.Context, args *RomeoInstallArgs) error {
-	rist.Namespace = args.Namespace.ToStringOutput()
 	if args.createNamespace {
 		rist.Namespace = rist.ns.Name
+	} else {
+		rist.Namespace = args.Namespace.ToStringOutput()
 	}
 
 	rist.Kubeconfig = pulumi.All(rist.sec.Data, args.APIServer, rist.ns.Name).ApplyT(func(all []any) string {
