@@ -26,6 +26,7 @@ func Test_I_Coverout(t *testing.T) {
 			"claim-name":      os.Getenv("CLAIM_NAME"),
 			"pvc-access-mode": "ReadWriteOnce", // don't need to scale (+ not possible with kind in CI)
 			"expose":          "true",          // make API externally reachable
+			"harden":          "true",          // we test Romeo in a hardened env -> need the netpol
 		},
 		Secrets: map[string]string{
 			"kubeconfig": os.Getenv("KUBECONFIG"),
