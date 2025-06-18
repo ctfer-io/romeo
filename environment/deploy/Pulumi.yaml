@@ -9,6 +9,10 @@ config:
   namespace:
     type: string
     description: 'The namespace in which to deploy, in case the kubeconfig has access to many.'
+  harden:
+    type: boolean
+    description: 'Whether to harden the namespace or not. Deny all traffic, deny inter-namespace communications, then grant DNS resolution, grant internet communications, and grant access to Romeo webserver. If a namespace is defined, only grant access to Romeo webserver.'
+    default: false
   tag:
     type: string
     description: 'The Romeo webserver docker tag to use.'

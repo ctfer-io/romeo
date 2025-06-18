@@ -50,6 +50,7 @@ Once your tests ran, you can [download the coverages](../download).
 | `stack-name`| String | `env` | The Pulumi stack name. Usefull when deploying multiple Romeo environments within the same context. |
 | `kubeconfig` | String |  | **Required.** The kubeconfig to use for deploying a Romeo environment. |
 | `namespace` | String |  | The namespace in which to deploy, in case the kubeconfig has access to many. |
+| `harden` | Bool | false | Whether to harden the namespace or not. Deny all traffic, deny inter-namespace communications, then grant DNS resolution, grant internet communications, and grant access to Romeo webserver. If a namespace is defined, only grant access to Romeo webserver. |
 | `tag` | String | `latest` | The [Romeo webserver docker tag](https://hub.docker.com/r/ctferio/romeo/tags) to use. |
 | `storage-class-name` | String | `standard` | **Required.** The StorageClass name for the PersistenVolumeClaim. |
 | `storage-size` | String | `50M` | **Required.** The storage size. |

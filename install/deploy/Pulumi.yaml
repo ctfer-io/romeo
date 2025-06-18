@@ -12,6 +12,10 @@ config:
   api-server:
     type: string
     description: 'The Kubernetes api-server URL to pipe into the generated kubeconfig. Is inferred from `kubeconfig` whenever possible. Example: "https://cp.my-k8s.lan:6443"'
+  harden:
+    type: boolean
+    description: 'Whether to harden the namespace or not. Deny all traffic, deny inter-namespace communications, then grant DNS resolution, and grant internet communications.'
+    default: false
 
 author: CTFer.io
 license: Apache-2.0

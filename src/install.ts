@@ -19,6 +19,9 @@ async function run(): Promise<void> {
             },
             'install:api-server': {
                 value: core.getInput('api-server')
+            },
+            'install:harden': {
+                value: core.getInput('harden', { required: false })
             }
         })
 

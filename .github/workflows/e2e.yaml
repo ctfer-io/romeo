@@ -85,13 +85,14 @@ jobs:
 
       - name: Romeo install
         id: install
-        uses: ctfer-io/romeo/install@6e8e480877690f74242a354ba0ef7404cacbbd6c
+        uses: ctfer-io/romeo/install@359b39dbd63ed45038293ab6e46a848ec16b62b7
         with:
           kubeconfig: ~/.kube/config
+          harden: true
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@6e8e480877690f74242a354ba0ef7404cacbbd6c
+        uses: ctfer-io/romeo/environment@359b39dbd63ed45038293ab6e46a848ec16b62b7
         with:
           registry: localhost:5000
           kubeconfig: ${{ steps.install.outputs.kubeconfig }}
@@ -99,6 +100,7 @@ jobs:
           storage-class-name: standard
           tag: ${{ github.sha }}
           pvc-access-mode: ReadWriteOnce
+          harden: true
 
       - name: Run Integration Tests
         run: |
@@ -113,7 +115,7 @@ jobs:
 
       - name: Download Romeo results
         id: download
-        uses: ctfer-io/romeo/download@6e8e480877690f74242a354ba0ef7404cacbbd6c
+        uses: ctfer-io/romeo/download@359b39dbd63ed45038293ab6e46a848ec16b62b7
         with:
           server: http://${{ steps.server.outputs.server }}:${{ steps.env.outputs.port }}
 

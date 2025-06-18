@@ -47,6 +47,7 @@ func main() {
 		rist, err := parts.NewRomeoInstall(ctx, "install", &parts.RomeoInstallArgs{
 			Namespace: pulumi.String(cfg.Get("namespace")),
 			APIServer: apiServer,
+			Harden:    cfg.GetBool("harden"),
 		}, opts...)
 		if err != nil {
 			return err
