@@ -217,6 +217,23 @@ func (rist *RomeoInstall) provision(
 					"replicasets",
 				}),
 			},
+			// The following is required when deploying in hardened mode
+			rbacv1.PolicyRuleArgs{
+				ApiGroups: pulumi.ToStringArray([]string{
+					"networking.k8s.io",
+				}),
+				Verbs: pulumi.ToStringArray([]string{
+					"create",
+					"delete",
+					"get",
+					"patch",
+					"list",
+					"watch",
+				}),
+				Resources: pulumi.ToStringArray([]string{
+					"networkpolicies",
+				}),
+			},
 		},
 	}, opts...)
 	if err != nil {
