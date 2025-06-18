@@ -85,14 +85,14 @@ jobs:
 
       - name: Romeo install
         id: install
-        uses: ctfer-io/romeo/install@c3ec9281003e017d11fbd1c66620d0157012bf5b
+        uses: ctfer-io/romeo/install@1b2ce27a02da13b72968e5280e376a06ab583772
         with:
           kubeconfig: ~/.kube/config
           harden: true
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@c3ec9281003e017d11fbd1c66620d0157012bf5b
+        uses: ctfer-io/romeo/environment@1b2ce27a02da13b72968e5280e376a06ab583772
         with:
           registry: localhost:5000
           kubeconfig: ${{ steps.install.outputs.kubeconfig }}
@@ -115,7 +115,7 @@ jobs:
 
       - name: Download Romeo results
         id: download
-        uses: ctfer-io/romeo/download@c3ec9281003e017d11fbd1c66620d0157012bf5b
+        uses: ctfer-io/romeo/download@1b2ce27a02da13b72968e5280e376a06ab583772
         with:
           server: http://${{ steps.server.outputs.server }}:${{ steps.env.outputs.port }}
 
