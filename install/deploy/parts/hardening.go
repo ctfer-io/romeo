@@ -26,7 +26,12 @@ type (
 	}
 )
 
-func NewHardening(ctx *pulumi.Context, name string, args *HardeningArgs, opts ...pulumi.ResourceOption) (*Hardening, error) {
+func NewHardening(
+	ctx *pulumi.Context,
+	name string,
+	args *HardeningArgs,
+	opts ...pulumi.ResourceOption,
+) (*Hardening, error) {
 	if args == nil {
 		return nil, errors.New("no arguments")
 	}

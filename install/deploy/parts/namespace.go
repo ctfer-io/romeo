@@ -40,7 +40,12 @@ type (
 )
 
 // NewNamespace creates a new [*Namespace].
-func NewNamespace(ctx *pulumi.Context, name string, args *NamespaceArgs, opts ...pulumi.ResourceOption) (*Namespace, error) {
+func NewNamespace(
+	ctx *pulumi.Context,
+	name string,
+	args *NamespaceArgs,
+	opts ...pulumi.ResourceOption,
+) (*Namespace, error) {
 	ns := &Namespace{}
 
 	args = ns.defaults(args)
