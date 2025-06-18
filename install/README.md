@@ -37,6 +37,7 @@ At the end of the Action, it will delete the deployed resources: it is an epheme
 | `kubeconfig` | String |  | **Required.** The kubeconfig to use for installing Romeo and generating its own kubeconfig (with restreined privileges). |
 | `namespace` | String |  | The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification. If not specified, will be randomly generated. |
 | `api-server` | String |  | The Kubernetes api-server URL to pipe into the generated kubeconfig. Is inferred from `kubeconfig` whenever possible. Example: "https://cp.my-k8s.lan:6443". |
+| `harden` | Bool | false | Whether to harden the namespace or not. Deny all traffic, deny inter-namespace communications, then grant DNS resolution, and grant internet communications. |
 
 #### Outputs
 

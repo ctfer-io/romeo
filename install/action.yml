@@ -13,6 +13,9 @@ inputs:
     description: 'The namespace to install Romeo into. May be randomly generated, as long as it fits Kubernetes naming specification. If not specified, will be randomly generated.'
   api-server:
     description: 'The Kubernetes api-server URL to pipe into the generated kubeconfig. Is inferred from `kubeconfig` whenever possible. Example: "https://cp.my-k8s.lan:6443".'
+  harden:
+    description: 'Whether to harden the namespace or not. Deny all traffic, deny inter-namespace communications, then grant DNS resolution, and grant internet communications.'
+    default: 'false'
 
 outputs:
   kubeconfig:

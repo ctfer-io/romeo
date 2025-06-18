@@ -49,6 +49,9 @@ async function run() {
             'env:namespace': {
                 value: core.getInput('namespace')
             },
+            'env:harden': {
+                value: core.getInput('harden', { required: false })
+            },
             'env:tag': {
                 value: core.getInput('tag')
             },

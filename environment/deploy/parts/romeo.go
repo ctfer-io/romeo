@@ -3,10 +3,13 @@ package parts
 import (
 	"fmt"
 	"strings"
+	"sync"
 
+	"github.com/ctfer-io/romeo/install/deploy/parts"
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
+	netwv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/networking/v1"
 	"github.com/pulumi/pulumi-random/sdk/v4/go/random"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
@@ -17,11 +20,14 @@ type (
 	RomeoEnvironment struct {
 		pulumi.ResourceState
 
+		ns        *parts.Namespace
+		h         *parts.Hardening
 		randName  *random.RandomString
 		pvc       *corev1.PersistentVolumeClaim
+		coverRand *random.RandomString
 		dep       *appsv1.Deployment
 		svc       *corev1.Service
-		coverRand *random.RandomString
+		netpol    *netwv1.NetworkPolicy
 
 		// Namespace to where Romeo is deployed.
 		// You can reuse it for further tests such that deployed Go apps target
@@ -50,7 +56,14 @@ type (
 		StorageSize pulumi.StringInput
 		storageSize pulumi.StringOutput
 
-		Namespace pulumi.StringInput
+		// Namespace in which to sets up the Romeo environments.
+		Namespace       pulumi.StringInput
+		createNamespace bool
+
+		// Harden the namespace or not.
+		// Deny all traffic, deny inter-namespace communications,
+		// then grant DNS resolution, and grant internet communications.
+		Harden bool
 
 		PVCAccessModes pulumi.StringArrayInput
 		pvcAccessModes pulumi.StringArrayOutput
@@ -89,7 +102,7 @@ func NewRomeoEnvironment(
 	if err := renv.provision(ctx, name, args, opts...); err != nil {
 		return nil, err
 	}
-	if err := renv.outputs(ctx); err != nil {
+	if err := renv.outputs(ctx, args); err != nil {
 		return nil, err
 	}
 
@@ -99,6 +112,18 @@ func NewRomeoEnvironment(
 func (renv *RomeoEnvironment) defaults(args *RomeoEnvironmentArgs) *RomeoEnvironmentArgs {
 	if args == nil {
 		args = &RomeoEnvironmentArgs{}
+	}
+
+	args.createNamespace = args.Namespace == nil
+	if args.Namespace != nil {
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+		args.Namespace.ToStringOutput().ApplyT(func(ns string) error {
+			args.createNamespace = ns == ""
+			wg.Done()
+			return nil
+		})
+		wg.Wait()
 	}
 
 	// Default tag to dev
@@ -180,11 +205,40 @@ func (renv *RomeoEnvironment) provision(
 		return
 	}
 
+	// Create namespace if required
+	namespace := args.Namespace
+	if args.createNamespace {
+		renv.ns, err = parts.NewNamespace(ctx, "romeo-environment", &parts.NamespaceArgs{
+			Name: pulumi.String("romeo-environment"),
+			AdditionalLabels: pulumi.StringMap{
+				"app.kubernetes.io/component": pulumi.String("environment"),
+				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+			},
+		}, opts...)
+		if err != nil {
+			return err
+		}
+		namespace = renv.ns.Name
+
+		if args.Harden {
+			renv.h, err = parts.NewHardening(ctx, "environment-hard", &parts.HardeningArgs{
+				Name: namespace,
+				AdditionalLabels: pulumi.StringMap{
+					"app.kubernetes.io/component": pulumi.String("environment"),
+					"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+				},
+			}, opts...)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	// Provision K8s resource
 	// => PVC
 	renv.pvc, err = corev1.NewPersistentVolumeClaim(ctx, "romeo-pvc-"+name, &corev1.PersistentVolumeClaimArgs{
 		Metadata: metav1.ObjectMetaArgs{
-			Namespace: args.Namespace,
+			Namespace: namespace,
 			Labels: pulumi.StringMap{
 				"app.kubernetes.io/component": pulumi.String(name),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
@@ -263,7 +317,7 @@ func (renv *RomeoEnvironment) provision(
 	}
 	renv.dep, err = appsv1.NewDeployment(ctx, "romeo-dep-"+name, &appsv1.DeploymentArgs{
 		Metadata: metav1.ObjectMetaArgs{
-			Namespace: args.Namespace,
+			Namespace: namespace,
 			Labels: pulumi.StringMap{
 				"app.kubernetes.io/name":      pulumi.String("romeo"),
 				"app.kubernetes.io/version":   args.tag,
@@ -285,7 +339,7 @@ func (renv *RomeoEnvironment) provision(
 			Replicas: pulumi.Int(1),
 			Template: corev1.PodTemplateSpecArgs{
 				Metadata: metav1.ObjectMetaArgs{
-					Namespace: args.Namespace,
+					Namespace: namespace,
 					Labels: pulumi.StringMap{
 						"app.kubernetes.io/name":      pulumi.String("romeo"),
 						"app.kubernetes.io/version":   args.tag,
@@ -321,7 +375,7 @@ func (renv *RomeoEnvironment) provision(
 	// => Service (expose Romeo)
 	renv.svc, err = corev1.NewService(ctx, "romeo-svc-"+name, &corev1.ServiceArgs{
 		Metadata: metav1.ObjectMetaArgs{
-			Namespace: args.Namespace,
+			Namespace: namespace,
 			Labels: pulumi.StringMap{
 				"app.kubernetes.io/component": pulumi.String(name),
 				"app.kubernetes.io/part-of":   pulumi.String("romeo"),
@@ -350,11 +404,55 @@ func (renv *RomeoEnvironment) provision(
 		return
 	}
 
+	if args.Harden {
+		renv.netpol, err = netwv1.NewNetworkPolicy(ctx, "netpol", &netwv1.NetworkPolicyArgs{
+			Metadata: metav1.ObjectMetaArgs{
+				Namespace: namespace,
+				Labels: pulumi.StringMap{
+					"app.kubernetes.io/component": pulumi.String(name),
+					"app.kubernetes.io/part-of":   pulumi.String("romeo"),
+					"instance":                    renv.randName.Result,
+				},
+			},
+			Spec: netwv1.NetworkPolicySpecArgs{
+				PodSelector: metav1.LabelSelectorArgs{
+					MatchLabels: renv.dep.Spec.Template().Metadata().Labels(),
+				},
+				PolicyTypes: pulumi.ToStringArray([]string{
+					"Ingress",
+				}),
+				Ingress: netwv1.NetworkPolicyIngressRuleArray{
+					netwv1.NetworkPolicyIngressRuleArgs{
+						From: netwv1.NetworkPolicyPeerArray{
+							netwv1.NetworkPolicyPeerArgs{
+								IpBlock: netwv1.IPBlockArgs{
+									Cidr: pulumi.String("0.0.0.0/0"),
+								},
+							},
+						},
+						Ports: netwv1.NetworkPolicyPortArray{
+							netwv1.NetworkPolicyPortArgs{
+								Port: pulumi.Int(8080),
+							},
+						},
+					},
+				},
+			},
+		}, opts...)
+		if err != nil {
+			return
+		}
+	}
+
 	return
 }
 
-func (renv *RomeoEnvironment) outputs(ctx *pulumi.Context) error {
-	renv.Namespace = renv.dep.Metadata.Namespace().Elem()
+func (renv *RomeoEnvironment) outputs(ctx *pulumi.Context, args *RomeoEnvironmentArgs) error {
+	renv.Namespace = args.Namespace.ToStringOutput()
+	if args.createNamespace {
+		renv.Namespace = renv.ns.Name
+	}
+
 	renv.ClaimName = renv.pvc.Metadata.Name().Elem()
 	renv.Port = renv.svc.Spec.Ports().Index(pulumi.Int(0)).NodePort().Elem()
 

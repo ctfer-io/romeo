@@ -51,6 +51,9 @@ async function run() {
             },
             'install:api-server': {
                 value: core.getInput('api-server')
+            },
+            'install:harden': {
+                value: core.getInput('harden', { required: false })
             }
         });
         const upRes = await stack.up({ onOutput: core.info });

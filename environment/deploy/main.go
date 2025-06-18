@@ -33,6 +33,7 @@ func main() {
 		// Deploy a Romeo instance
 		romeo, err := parts.NewRomeoEnvironment(ctx, "deploy", &parts.RomeoEnvironmentArgs{
 			Namespace:        pulumi.String(cfg.Namespace),
+			Harden:           cfg.Harden,
 			Tag:              pulumi.String(cfg.Tag),
 			StorageClassName: pulumi.String(cfg.StorageClassName),
 			StorageSize:      pulumi.String(cfg.StorageSize),
@@ -63,6 +64,7 @@ func main() {
 type Config struct {
 	Kubeconfig       pulumi.StringOutput
 	Namespace        string
+	Harden           bool
 	Tag              string
 	StorageClassName string
 	StorageSize      string
@@ -76,6 +78,7 @@ func loadConfig(ctx *pulumi.Context) *Config {
 	return &Config{
 		Kubeconfig:       cfg.GetSecret("kubeconfig"),
 		Namespace:        cfg.Get("namespace"),
+		Harden:           cfg.GetBool("harden"),
 		Tag:              cfg.Get("tag"),
 		StorageClassName: cfg.Get("storage-class-name"),
 		StorageSize:      cfg.Get("storage-size"),
