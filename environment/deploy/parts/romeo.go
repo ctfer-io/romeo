@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ctfer-io/romeo/install/deploy/parts"
 	appsv1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/apps/v1"
 	corev1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/core/v1"
 	metav1 "github.com/pulumi/pulumi-kubernetes/sdk/v4/go/kubernetes/meta/v1"
@@ -20,8 +19,8 @@ type (
 	RomeoEnvironment struct {
 		pulumi.ResourceState
 
-		ns        *parts.Namespace
-		h         *parts.Hardening
+		ns        *Namespace
+		h         *Hardening
 		randName  *random.RandomString
 		pvc       *corev1.PersistentVolumeClaim
 		coverRand *random.RandomString
@@ -208,7 +207,7 @@ func (renv *RomeoEnvironment) provision(
 	// Create namespace if required
 	namespace := args.Namespace
 	if args.createNamespace {
-		renv.ns, err = parts.NewNamespace(ctx, "romeo-environment", &parts.NamespaceArgs{
+		renv.ns, err = NewNamespace(ctx, "romeo-environment", &NamespaceArgs{
 			Name: pulumi.String("romeo-environment"),
 			AdditionalLabels: pulumi.StringMap{
 				"app.kubernetes.io/component": pulumi.String("environment"),
@@ -221,7 +220,7 @@ func (renv *RomeoEnvironment) provision(
 		namespace = renv.ns.Name
 
 		if args.Harden {
-			renv.h, err = parts.NewHardening(ctx, "environment-hard", &parts.HardeningArgs{
+			renv.h, err = NewHardening(ctx, "environment-hard", &HardeningArgs{
 				Name: namespace,
 				AdditionalLabels: pulumi.StringMap{
 					"app.kubernetes.io/component": pulumi.String("environment"),
