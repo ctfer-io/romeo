@@ -3,7 +3,7 @@ module github.com/ctfer-io/romeo/environment/deploy
 go 1.23.2
 
 require (
-	github.com/ctfer-io/romeo/webserver v0.0.0-20250610085853-1070d3fb6f21
+	github.com/ctfer-io/romeo/webserver v0.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.23.0
 	github.com/pulumi/pulumi-random/sdk/v4 v4.18.2
