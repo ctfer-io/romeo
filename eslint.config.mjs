@@ -16,7 +16,6 @@ const compat = new FlatCompat({
 })
 
 export default [
-    ...compat.extends('plugin:github/recommended'),
     {
         files: ['src/**/*.ts'],
 

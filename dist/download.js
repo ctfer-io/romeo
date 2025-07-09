@@ -105,8 +105,8 @@ async function run() {
         }
     }
     catch (error) {
-        core.setFailed(error.message);
+        core.setFailed(`${error?.message ?? error}`);
     }
 }
-run();
+void run();
 //# sourceMappingURL=download.js.map
