@@ -20,7 +20,7 @@ function isPathInside(parent: string, child: string): boolean {
     )
 }
 
-async function unzipToDir(zipBuffer: Buffer, targetDir: string) {
+async function unzipToDir(zipBuffer: Buffer, targetDir: string): Promise<void> {
     const zip = new AdmZip(zipBuffer)
     const entries = zip.getEntries()
 
@@ -84,9 +84,9 @@ async function run(): Promise<void> {
                 `Invalid mode "${strategy}". Must be either "coverfile" or "raw".`
             )
         }
-    } catch (error: any) {
-        core.setFailed(error.message)
+    } catch (error) {
+        core.setFailed(`${(error as Error)?.message ?? error}`)
     }
 }
 
-run()
+void run()
