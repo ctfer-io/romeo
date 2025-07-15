@@ -82,11 +82,11 @@ jobs:
 
       - name: Tag SDK Versions
         run: |
-          git tag -a install/${{ env.REF_NAME }} -m install/${{ env.REF_NAME }}
-          git tag -a environment/${{ env.REF_NAME }} -m environment/${{ env.REF_NAME }}
+          git tag -a install/${{ env.REF_NAME }}/deploy -m install/${{ env.REF_NAME }}/deploy
+          git tag -a environment/${{ env.REF_NAME }}/deploy -m environment/${{ env.REF_NAME }}/deploy
           git tag -a webserver/${{ env.REF_NAME }} -m webserver/${{ env.REF_NAME }}
       - name: Push to Repository
         run: |
-          git push origin install/${{ env.REF_NAME }}
-          git push origin environment/${{ env.REF_NAME }}
+          git push origin install/${{ env.REF_NAME }}/deploy
+          git push origin environment/${{ env.REF_NAME }}/deploy
           git push origin webserver/${{ env.REF_NAME }}
