@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/mail"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,7 +16,7 @@ import (
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 	"go.uber.org/zap"
 )
 
@@ -27,7 +28,7 @@ var (
 )
 
 func main() {
-	app := cli.App{
+	app := cli.Command{
 		Name:        "Romeo - Webserver",
 		Description: "O Romeo, Romeo, whatfore art coverages Romeo?",
 		Flags: []cli.Flag{
@@ -35,12 +36,12 @@ func main() {
 			cli.VersionFlag,
 			&cli.StringFlag{
 				Name:        "coverdir",
-				EnvVars:     []string{"COVERDIR"},
+				Sources:     cli.EnvVars("COVERDIR"),
 				Destination: &apiv1.Coverdir,
 			},
 			&cli.IntFlag{
 				Name:    "port",
-				EnvVars: []string{"PORT"},
+				Sources: cli.EnvVars("PORT"),
 				Value:   8080,
 			},
 		},
@@ -53,23 +54,23 @@ func main() {
 						Name:     "server",
 						Usage:    "Server URL to reach out the Romeo environment.",
 						Required: true,
-						EnvVars:  []string{"SERVER"},
+						Sources:  cli.EnvVars("SERVER"),
 					},
 					&cli.StringFlag{
 						Name:     "directory",
 						Usage:    "Directory to export the coverages data (defaults to \"coverout\").",
 						Required: true,
-						EnvVars:  []string{"DIRECTORY"},
+						Sources:  cli.EnvVars("DIRECTORY"),
 					},
 				},
 				Action: download,
 			},
 		},
 		Action: run,
-		Authors: []*cli.Author{
-			{
-				Name:  "Lucas Tesson - PandatiX",
-				Email: "lucastesson@protonmail.com",
+		Authors: []any{
+			mail.Address{
+				Name:    "Lucas Tesson - PandatiX",
+				Address: "lucastesson@protonmail.com",
 			},
 		},
 		Version: version,
@@ -99,13 +100,13 @@ func main() {
 		}
 	}()
 
-	if err := app.RunContext(ctx, os.Args); err != nil {
+	if err := app.Run(ctx, os.Args); err != nil {
 		webserver.Logger.Error("root level error", zap.Error(err))
 		os.Exit(1)
 	}
 }
 
-func run(ctx *cli.Context) error {
+func run(_ context.Context, cmd *cli.Command) error {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(ginzap.Ginzap(webserver.Logger, time.RFC3339, true))
@@ -114,16 +115,16 @@ func run(ctx *cli.Context) error {
 	apiv1g := router.Group("/api/v1")
 	apiv1g.GET("/coverout", apiv1.Coverout)
 
-	port := ctx.Int("port")
+	port := cmd.Int("port")
 	webserver.Logger.Info("api server listening",
 		zap.Int("port", port),
 	)
 	return router.Run(fmt.Sprintf(":%d", port))
 }
 
-func download(ctx *cli.Context) error {
+func download(_ context.Context, cmd *cli.Command) error {
 	// Download coverages
-	server := ctx.String("server")
+	server := cmd.String("server")
 	fmt.Printf("Downloading coverages from %s...\n", server)
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/v1/coverout", server), nil)
 	if err != nil {
@@ -144,7 +145,7 @@ func download(ctx *cli.Context) error {
 	}
 
 	// Export to filesystem
-	cd := ctx.String("directory")
+	cd := cmd.String("directory")
 	fmt.Printf("Exporting coverages to %s\n", cd)
 	if err := apiv1.Decode(resp.Merged, cd); err != nil {
 		return errors.Wrap(err, "decoding coverages")
