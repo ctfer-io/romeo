@@ -8,7 +8,7 @@ require (
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.23.0
 	github.com/pulumi/pulumi-random/sdk/v4 v4.18.4
 	github.com/pulumi/pulumi/pkg/v3 v3.205.0
-	github.com/pulumi/pulumi/sdk/v3 v3.205.0
+	github.com/pulumi/pulumi/sdk/v3 v3.206.0
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -84,7 +84,7 @@ require (
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.26.0 // indirect
-	github.com/go-test/deep v1.0.3 // indirect
+	github.com/go-test/deep v1.1.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
