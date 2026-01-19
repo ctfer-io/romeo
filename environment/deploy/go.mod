@@ -8,7 +8,7 @@ require (
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.24.1
 	github.com/pulumi/pulumi-random/sdk/v4 v4.19.0
 	github.com/pulumi/pulumi/pkg/v3 v3.215.0
-	github.com/pulumi/pulumi/sdk/v3 v3.215.0
+	github.com/pulumi/pulumi/sdk/v3 v3.216.0
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
