@@ -33,7 +33,7 @@
     "dependencies": {
         "@actions/core": "^2.0.2",
         "@actions/github": "^7.0.0",
-        "@pulumi/pulumi": "^3.214.1",
+        "@pulumi/pulumi": "^3.216.0",
         "adm-zip": "^0.5.16",
         "node-fetch": "^3.3.2",
         "upath": "^2.0.1"
