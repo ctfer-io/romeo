@@ -8,7 +8,7 @@ require (
 	github.com/pulumi/pulumi-kubernetes/sdk/v4 v4.25.0
 	github.com/pulumi/pulumi-random/sdk/v4 v4.19.1
 	github.com/pulumi/pulumi/pkg/v3 v3.219.0
-	github.com/pulumi/pulumi/sdk/v3 v3.219.0
+	github.com/pulumi/pulumi/sdk/v3 v3.220.0
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -76,7 +76,7 @@ require (
 	github.com/gin-gonic/gin v1.10.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.0 // indirect
+	github.com/go-git/go-git/v5 v5.16.5 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
