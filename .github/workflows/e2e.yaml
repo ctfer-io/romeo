@@ -84,14 +84,14 @@ jobs:
 
       - name: Romeo install
         id: install
-        uses: ctfer-io/romeo/install@359b39dbd63ed45038293ab6e46a848ec16b62b7
+        uses: ./install
         with:
           kubeconfig: ~/.kube/config
           harden: true
 
       - name: Romeo environment
         id: env
-        uses: ctfer-io/romeo/environment@359b39dbd63ed45038293ab6e46a848ec16b62b7
+        uses: ./environment
         with:
           registry: localhost:5000
           kubeconfig: ${{ steps.install.outputs.kubeconfig }}
