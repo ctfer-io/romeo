@@ -81,7 +81,6 @@ jobs:
       - name: Prepare environment
         run: |
           pulumi login --local
-          kubectl create ns romeo-in-ci
 
       - name: Romeo install
         id: install
@@ -104,7 +103,8 @@ jobs:
 
       - name: Run Integration Tests
         run: |
-          go test -v ./environment/deploy/integration/ -run=^Test_I_ -coverprofile=integration.cov -timeout=10m
+          mkdir coverdir # Directory in which coverage data are exported
+          go test -v ./deploy/integration/ -run=^Test_I_ -coverprofile=integration.cov -timeout=10m
         env:
           NAMESPACE: ${{ steps.install.outputs.namespace }}
           TAG: ${{ github.sha }}
@@ -112,6 +112,7 @@ jobs:
           KUBECONFIG: ${{ steps.install.outputs.kubeconfig }}
           CLAIM_NAME: ${{ steps.env.outputs.claim-name }}
           SERVER: ${{ steps.server.outputs.server }}
+        working-directory: environment
 
       - name: Download Romeo results
         id: download
@@ -125,8 +126,14 @@ jobs:
           # It cannot be inferred, leading to this highly precise step.
           sed -i 's|^/go/src|github.com/ctfer-io/romeo/webserver|' ${{ steps.download.outputs.path }}
 
+          (
+            cd environment
+            go tool covdata textfmt -i=coverdir -o=binary.cov
+            sed -i 's|^/home/runner/work/romeo/romeo|github.com/ctfer-io/romeo|' binary.cov
+          )
+
           go install go.shabbyrobe.org/gocovmerge/cmd/gocovmerge@fa4f82cfbf4d57c646c1ed0f35002bf1b89fbf7a
-          gocovmerge integration.cov ${{ steps.download.outputs.path }} > e2e.cov
+          gocovmerge ${{ steps.download.outputs.path }} integration.cov binary.cov > e2e.cov
 
       - name: Upload e2e tests coverage
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

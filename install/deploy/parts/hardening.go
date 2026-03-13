@@ -13,7 +13,6 @@ type (
 
 		npol        *netwv1.NetworkPolicy
 		dnspol      *netwv1.NetworkPolicy
-		internspol  *netwv1.NetworkPolicy
 		internetpol *netwv1.NetworkPolicy
 	}
 
@@ -104,43 +103,6 @@ func (h *Hardening) provision(ctx *pulumi.Context, args *HardeningArgs, opts ...
 						netwv1.NetworkPolicyPortArgs{
 							Port:     pulumi.Int(53),
 							Protocol: pulumi.String("TCP"),
-						},
-					},
-				},
-			},
-		},
-	}, opts...)
-	if err != nil {
-		return
-	}
-
-	// Whatever happens (IP ranges, DNS entries) deny all traffic to adjacent
-	// namespaces -> isolation by default/in depth.
-	h.internspol, err = netwv1.NewNetworkPolicy(ctx, "inter-ns", &netwv1.NetworkPolicyArgs{
-		Metadata: metav1.ObjectMetaArgs{
-			Namespace: args.Name,
-			Labels:    args.AdditionalLabels,
-		},
-		Spec: netwv1.NetworkPolicySpecArgs{
-			PodSelector: metav1.LabelSelectorArgs{},
-			PolicyTypes: pulumi.ToStringArray([]string{
-				"Egress",
-			}),
-			Egress: netwv1.NetworkPolicyEgressRuleArray{
-				netwv1.NetworkPolicyEgressRuleArgs{
-					To: netwv1.NetworkPolicyPeerArray{
-						netwv1.NetworkPolicyPeerArgs{
-							NamespaceSelector: metav1.LabelSelectorArgs{
-								MatchExpressions: metav1.LabelSelectorRequirementArray{
-									metav1.LabelSelectorRequirementArgs{
-										Key:      pulumi.String("kubernetes.io/metadata.name"),
-										Operator: pulumi.String("NotIn"),
-										Values: pulumi.StringArray{
-											args.Name,
-										},
-									},
-								},
-							},
 						},
 					},
 				},

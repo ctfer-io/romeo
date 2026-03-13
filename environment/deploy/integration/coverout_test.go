@@ -31,6 +31,9 @@ func Test_I_Coverout(t *testing.T) {
 		Secrets: map[string]string{
 			"kubeconfig": os.Getenv("KUBECONFIG"),
 		},
+		Env: []string{
+			"CTFERIO_CHALL_MANAGER_INTEGRATION_TEST=true",
+		},
 		ExtraRuntimeValidation: func(t *testing.T, stack integration.RuntimeValidationStackInfo) {
 			// Issue API call
 			server := fmt.Sprintf("%s:%0.f", os.Getenv("SERVER"), stack.Outputs["port"])
