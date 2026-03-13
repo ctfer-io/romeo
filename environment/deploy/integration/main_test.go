@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	Server = ""
+	Server = os.Getenv("SERVER")
 )
 
 func TestMain(m *testing.M) {
