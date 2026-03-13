@@ -133,7 +133,7 @@ jobs:
           )
 
           go install go.shabbyrobe.org/gocovmerge/cmd/gocovmerge@fa4f82cfbf4d57c646c1ed0f35002bf1b89fbf7a
-          gocovmerge ${{ steps.download.outputs.path }} integration.cov binary.cov > e2e.cov
+          gocovmerge ${{ steps.download.outputs.path }} environment/integration.cov environment/binary.cov > e2e.cov
 
       - name: Upload e2e tests coverage
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
