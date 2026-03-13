@@ -94,7 +94,7 @@ func main() {
 						},
 					},
 				},
-			}); err != nil {
+			}, opts...); err != nil {
 				return errors.Wrap(err, "allowing inside OCI traffic")
 			}
 		}
