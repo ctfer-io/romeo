@@ -37,8 +37,12 @@ func Test_I_Coverout(t *testing.T) {
 		ExtraRuntimeValidation: func(t *testing.T, stack integration.RuntimeValidationStackInfo) {
 			// Issue API call
 			server := fmt.Sprintf("%s:%0.f", os.Getenv("SERVER"), stack.Outputs["port"])
-			req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/api/v1/coverout", server), nil)
-			res, err := http.DefaultClient.Do(req)
+			req, _ := http.NewRequest( //nolint:gosec //#gosec G704 -- FP, we are in integration test
+				http.MethodGet,
+				fmt.Sprintf("http://%s/api/v1/coverout", server),
+				nil,
+			)
+			res, err := http.DefaultClient.Do(req) //nolint:gosec //#gosec G704 -- FP, we are in integration test
 			require.NoError(t, err)
 			defer func() {
 				_ = res.Body.Close()

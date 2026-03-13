@@ -39,7 +39,7 @@ func testmain(m *testing.M) error {
 	cmd.Dir = pdir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return errors.Wrapf(err, "stack compilation failed with output: %s\n", out)
+		return errors.Wrapf(err, "stack compilation failed with output %s", out)
 	}
 	defer func() {
 		_ = os.Remove(filepath.Join(pdir, "main"))

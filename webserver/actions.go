@@ -10,7 +10,8 @@ import (
 
 func Output(key, dir string) error {
 	// Open GitHub output file
-	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0777)
+	//nolint:lll // the line is long for gosec FP description
+	f, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600) //nolint:gosec //#gosec G703 -- FP, this is intended
 	if err != nil {
 		return errors.Wrap(err, "opening output file")
 	}
