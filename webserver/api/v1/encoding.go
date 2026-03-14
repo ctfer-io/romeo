@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,20 +25,19 @@ func Encode(src string) (string, error) {
 	w := zip.NewWriter(buf)
 
 	// Walk in filesystem to zip files
-	walker := func(path string, info os.FileInfo, err error) error {
+	if err := filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() {
+
+		if d.IsDir() {
 			return nil
 		}
-		file, err := os.Open(path)
+
+		file, err := os.Open(path) //nolint:gosec //#gosec G122 -- FP, the path cannot be controlled by an attacker
 		if err != nil {
 			return err
 		}
-		defer func() {
-			_ = file.Close()
-		}()
 
 		// Remove coverdir from file in zip (avoid nested directories)
 		npath := strings.TrimPrefix(path, src+"/")
@@ -46,13 +46,11 @@ func Encode(src string) (string, error) {
 			return err
 		}
 
-		if _, err := io.Copy(f, file); err != nil {
-			return err
-		}
+		_, err = io.Copy(f, file)
+		file.Close()
 
-		return nil
-	}
-	if err := filepath.Walk(src, walker); err != nil {
+		return err
+	}); err != nil {
 		return "", err
 	}
 	w.Close()

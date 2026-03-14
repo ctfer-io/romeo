@@ -40,6 +40,8 @@ type (
 		// The claim name to mount in coverage-monitored Go pods for them to
 		// export their coverage data.
 		ClaimName pulumi.StringOutput
+
+		PodLabels pulumi.StringMapOutput
 	}
 
 	// RomeoEnvironmentArgs contains all the arguments to deploy a Romeo environment.
@@ -455,10 +457,12 @@ func (renv *RomeoEnvironment) outputs(ctx *pulumi.Context, args *RomeoEnvironmen
 
 	renv.ClaimName = renv.pvc.Metadata.Name().Elem()
 	renv.Port = renv.svc.Spec.Ports().Index(pulumi.Int(0)).NodePort().Elem()
+	renv.PodLabels = renv.dep.Spec.Template().Metadata().Labels()
 
 	return ctx.RegisterResourceOutputs(renv, pulumi.Map{
 		"namespace":  renv.Namespace,
 		"claim-name": renv.ClaimName,
 		"port":       renv.Port,
+		"podLabels":  renv.PodLabels,
 	})
 }
