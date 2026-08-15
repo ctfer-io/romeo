@@ -36,7 +36,7 @@
         "@pulumi/pulumi": "^3.256.0",
         "adm-zip": "^0.6.0",
         "node-fetch": "^3.3.2",
-        "upath": "^2.0.1"
+        "upath": "^3.0.8"
     },
     "devDependencies": {
         "@types/adm-zip": "^0.5.8",
