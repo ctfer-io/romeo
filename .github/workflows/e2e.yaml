@@ -77,7 +77,7 @@ jobs:
           docker push localhost:5000/ctferio/romeo:${{ github.sha }}
 
       - name: Install Pulumi
-        uses: pulumi/actions@8582a9e8cc630786854029b4e09281acd6794b58 # v6.6.1
+        uses: pulumi/actions@96c7761824268174e0d2a4e8c7d75671eebd24a7 # v7.1.0
       - name: Prepare environment
         run: |
           pulumi login --local
