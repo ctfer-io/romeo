@@ -27,7 +27,7 @@ jobs:
           go-version-file: 'go.work'
 
       - name: Install Syft
-        uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        uses: anchore/sbom-action/download-syft@dfcb83b97731532d72be422cbc51ee64adb6fd56 # v0.24.4
 
       - name: Run GoReleaser
         id: run-goreleaser
